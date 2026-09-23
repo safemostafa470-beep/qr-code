@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام إدارة البيانات والباركود المحمي</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --accent: #0284c7;
+            --danger: #e11d48;
+            --success: #059669;
+            --warning: #d97706;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-secondary: #64748b;
+        }
+
+        * { box-sizing: border-box; font-family: 'Cairo', sans-serif; }
+        body { background: var(--bg-color); margin: 0; padding: 0; direction: rtl; color: var(--text-main); }
+        
+        #loginOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px;
+        }
+        .login-card {
+            background: var(--card-bg); padding: 30px 20px; border-radius: 20px; width: 100%; max-width: 380px; 
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); text-align: center;
+        }
+        .login-card h3 { margin-bottom: 20px; color: var(--text-main); font-size: 20px; font-weight: 900; }
+        .login-card input { 
+            width: 100%; padding: 12px 15px; margin-bottom: 12px; border: 2px solid #cbd5e1; 
+            border-radius: 12px; font-size: 14px; text-align: center; background: #f8fafc; transition: 0.3s;
+        }
+        .login-card input:focus { outline: none; border-color: var(--primary); background: #fff; box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); }
+        
+        .remember-me { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 15px; font-size: 13px; color: var(--text-secondary); font-weight: 700; cursor: pointer; }
+        .remember-me input { width: 16px; height: 16px; accent-color: var(--primary); margin: 0; cursor: pointer; }
+
+        .login-card button { 
+            width: 100%; padding: 12px; background: var(--primary); color: #fff; border: none; border-radius: 12px; 
+            font-size: 15px; font-weight: 700; cursor: pointer; transition: 0.3s; 
+        }
+        .login-card button:hover { background: var(--primary-hover); }
+        #loginError { color: var(--danger); font-size: 12px; margin-top: 10px; display: none; font-weight: 600; background: #fff1f2; padding: 8px; border-radius: 6px; }
+
+        .container { max-width: 1000px; margin: auto; background: var(--card-bg); padding: 2px; border-radius: 6px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); display: none; }
+        
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; border-bottom: 1px solid #cbd5e1; padding-bottom: 2px; }
+        .top-bar h2 { font-size: 11px; color: var(--primary); margin: 0; font-weight: 900; }
+        .logout-btn { background: #ffe4e6; color: var(--danger); border: none; padding: 2px 5px; border-radius: 4px; font-size: 8px; font-weight: 700; cursor: pointer; }
+
+        #adminPanel { display: none; background: #f8fafc; padding: 3px; border-radius: 4px; border: 1px solid #cbd5e1; margin-bottom: 2px; }
+        #adminPanel h3 { margin-top: 0; color: var(--primary); font-size: 10px; font-weight: 800; margin-bottom: 3px; }
+        .admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 2px; margin-bottom: 3px; }
+        .admin-grid input, .admin-grid select { padding: 2px; border: 1px solid #cbd5e1; border-radius: 3px; font-size: 8px; background: #fff; text-align: center; }
+        .btn-add { background: var(--success); color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: 700; padding: 2px; }
+
+        .company-card { background: #ffffff; border: 1.5px solid #000; padding: 10px 10px; border-radius: 4px; margin-top: 6px; margin-bottom: 5px; }
+        .no-dup-table { width: 100%; border-collapse: collapse; }
+        .no-dup-table td { padding: 4px 6px; border: none; vertical-align: middle; }
+        
+        .logo-box { width: 50px; height: 50px; border: 1.5px dashed var(--accent); display: flex; align-items: center; justify-content: center; text-align: center; font-size: 8px; color: var(--text-secondary); background: #f8fafc; border-radius: 50%; overflow: hidden; cursor: pointer; margin: 0 auto; }
+        .logo-box img { width: 100%; height: 100%; object-fit: cover; }
+        .logo-hint { font-size: 6px; color: var(--danger); font-weight: 700; text-align: center; display: block; margin-top: 3px; }
+
+        .input-group { display: flex; align-items: center; gap: 6px; width: 100%; margin-bottom: 5px; }
+        .input-group label { font-size: 8px; font-weight: 700; color: var(--text-secondary); width: 65px; flex-shrink: 0; text-align: left; }
+        .company-card input { width: 100%; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 3px; font-size: 9px; background: #fff; font-weight: 700; color: var(--text-main); text-align: right; }
+        .company-card input:read-only { background: #f8fafc; color: #475569; border-color: #e2e8f0; }
+
+        .actions { display: flex; flex-wrap: wrap; gap: 2px; margin-bottom: 2px; justify-content: center; }
+        .actions button, .actions label { flex: 1; min-width: 70px; max-width: 100px; padding: 3px; background: var(--primary); color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 8px; font-weight: 700; text-align: center; display: inline-flex; align-items: center; justify-content: center; gap: 2px; }
+        .actions button.save-btn { background: var(--success); }
+        .actions button.stop-btn { background: var(--danger); }
+
+        #reader { width: 100%; max-width: 250px; margin: 0 auto 2px auto; display: none; background: #000; border-radius: 4px; overflow: hidden; }
+
+        .grids-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 1px;
+            height: calc(100vh - 75px);
+        }
+
+        .single-grid-box {
+            border: 1px solid #000;
+            background: #fff;
+            padding: 0px;
+            border-radius: 1px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .custom-table { width: 100%; height: 100%; border-collapse: collapse; table-layout: fixed; }
+        .custom-table th, .custom-table td {
+            border: 1px solid #000;
+            padding: 0px;
+            text-align: center;
+            font-size: 5.1px;
+            height: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            line-height: 1.05;
+        }
+        .custom-table th {
+            background-color: #f1f5f9;
+            color: #000;
+            font-weight: 900;
+            font-size: 6.2px;
+            height: 15.5px;
+        }
+
+        .grid-input {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: transparent;
+            text-align: center;
+            font-size: 5.1px;
+            font-family: 'Cairo', sans-serif;
+            padding: 0;
+            margin: 0;
+            outline: none;
+        }
+        .grid-input:focus {
+            background: #eef2ff;
+        }
+
+        .col-num { width: 9%; }
+        .col-imei { width: 45%; }
+        .col-carton { width: 12%; }
+        .col-model { width: 18%; }
+        .col-color { width: 16%; }
+
+        .table-responsive { width: 100%; overflow-x: auto; border-radius: 4px; border: 1px solid #cbd5e1; background: #fff; margin-bottom: 2px; }
+        table { width: 100%; border-collapse: collapse; min-width: 300px; }
+        
+        .badge-active { background: #dcfce7; color: #166534; padding: 1px 2px; border-radius: 2px; font-size: 5px; font-weight: 700; display: inline-block; }
+        .badge-expired { background: #fee2e2; color: #991b1b; padding: 1px 2px; border-radius: 2px; font-size: 5px; font-weight: 700; display: inline-block; }
+
+        .btn-sm { padding: 1px 2px; font-size: 5px; border-radius: 2px; border: none; cursor: pointer; font-weight: 700; }
+        .btn-edit-user { background: var(--accent); color: white; }
+        .btn-toggle { background: var(--warning); color: white; }
+        .btn-delete { background: var(--danger); color: white; }
+
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 1mm;
+            }
+            .no-print, .actions, #reader, .top-bar, #adminPanel, .logo-hint, .table-responsive { 
+                display: none !important; 
+            }
+            body, html { 
+                background: #fff !important; 
+                padding: 0 !important; 
+                margin: 0 !important;
+                width: 210mm;
+                height: 295mm;
+                overflow: hidden !important;
+            }
+            .container { 
+                box-shadow: none !important; 
+                padding: 0 !important; 
+                width: 208mm !important; 
+                height: 293mm !important;
+                border: none !important; 
+                display: flex !important; 
+                flex-direction: column !important;
+                justify-content: space-between !important;
+                margin: 0 auto !important; 
+                page-break-after: avoid !important;
+                page-break-before: avoid !important;
+                page-break-inside: avoid !important;
+            }
+            .company-card { 
+                border: 1.5px solid #000 !important; 
+                padding: 7px 8px !important; 
+                margin-top: 3px !important;
+                margin-bottom: 4px !important; 
+            }
+            .company-card input { 
+                border: none !important; 
+                background: transparent !important; 
+                font-size: 8.5px !important; 
+                padding: 0 !important; 
+            }
+            .input-group label {
+                font-size: 8px !important;
+                width: 62px !important;
+            }
+            .logo-box { 
+                border: 1.5px solid #000 !important; 
+                width: 44px !important; 
+                height: 44px !important; 
+                font-size: 6.5px !important;
+            }
+            .grids-container {
+                display: grid !important;
+                grid-template-columns: repeat(2, 1fr) !important;
+                grid-template-rows: repeat(3, 1fr) !important;
+                gap: 1px !important;
+                height: 255mm !important;
+            }
+            .single-grid-box {
+                border: 1px solid #000 !important;
+                height: 100% !important;
+            }
+            .custom-table th, .custom-table td {
+                border: 1px solid #000 !important;
+                font-size: 5px !important;
+                height: auto !important;
+                padding: 0px !important;
+                line-height: 1.08;
+            }
+            .custom-table th {
+                font-size: 6px !important;
+                height: 14.5px !important;
+            }
+            .grid-input {
+                border: none !important;
+                background: transparent !important;
+                font-size: 5px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loginOverlay">
+        <div class="login-card">
+            <h3 id="loginTitleText">🔐 بوابة دخول النظام</h3>
+            <input type="text" id="loginUser" placeholder="اسم المستخدم">
+            <input type="password" id="loginPass" placeholder="كلمة المرور">
+            <label class="remember-me">
+                <input type="checkbox" id="rememberMeCheck" checked> حفظ بيانات الدخول
+            </label>
+            <button onclick="handleLogin()">تسجيل الدخول</button>
+            <div id="loginError">بيانات الدخول خاطئة أو الاشتراك منتهي!</div>
+        </div>
+    </div>
+
+    <div class="container" id="appContainer">
+        <div class="top-bar">
+            <h2>⚡ نظام إدارة البيانات والباركود</h2>
+            <button onclick="handleLogout()" class="logout-btn">🚪 خروج</button>
+        </div>
+
+        <div id="adminPanel">
+            <h3>👑 لوحة تحكم الأدمن المركزية</h3>
+            <div class="admin-grid">
+                <input type="text" id="newUsername" placeholder="اسم المستخدم الجديد">
+                <input type="text" id="newPassword" placeholder="كلمة المرور">
+                <input type="date" id="newExpiry">
+                <select id="newRole">
+                    <option value="user">مستخدم عادي</option>
+                    <option value="admin">مدير (Admin)</option>
+                </select>
+                <button class="btn-add" onclick="addSubscriber()">+ إضافة مشترك</button>
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>المستخدم</th>
+                            <th>كلمة المرور</th>
+                            <th>الانتهاء والصلاحية</th>
+                            <th>الحالة والأيام</th>
+                            <th>الإدارة</th>
+                        </tr>
+                    </thead>
+                    <tbody id="subscribersTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="company-card">
+            <table class="no-dup-table">
+                <tr>
+                    <td style="width: 40%; vertical-align: top;">
+                        <div class="input-group">
+                            <label>اسم المنشأة:</label>
+                            <input type="text" id="compName" placeholder="اسم المنشأة" readonly>
+                        </div>
+                        <div class="input-group">
+                            <label>الرقم الضريبي:</label>
+                            <input type="text" id="taxNumber" placeholder="الرقم الضريبي" readonly>
+                        </div>
+                        <div class="input-group">
+                            <label>السجل التجاري:</label>
+                            <input type="text" id="commercialRecord" placeholder="السجل التجاري" readonly>
+                        </div>
+                    </td>
+                    
+                    <td style="width: 20%; text-align: center; vertical-align: middle;">
+                        <div class="logo-box" id="logoPreview" onclick="triggerLogoUpload()">الشعار</div>
+                        <input type="file" id="logoInput" accept="image/*" style="display:none;" onchange="handleLogoUpload(event)">
+                        <span class="logo-hint" id="logoHintText" style="display:none;">تعديل</span>
+                    </td>
+
+                    <td style="width: 40%; vertical-align: top;">
+                        <div class="input-group">
+                            <label>رقم التليفون:</label>
+                            <input type="text" id="phone" placeholder="رقم التليفون" readonly>
+                        </div>
+                        <div class="input-group">
+                            <label>البريد الإلكتروني:</label>
+                            <input type="email" id="email" placeholder="البريد الإلكتروني" readonly>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="actions">
+            <button onclick="saveCompanySettings()" class="no-print save-btn" id="saveCompanyBtn" style="display:none;">💾 حفظ التعديلات</button>
+            <button onclick="startRealBarcodeScanner()" class="no-print" id="scanBtn">📷 فتح الكاميرا</button>
+            <button onclick="stopBarcodeScanner()" class="no-print stop-btn" id="stopBtn" style="display:none;">✕ إغلاق الكاميرا</button>
+            
+            <label for="galleryBarcode" class="no-print" style="cursor: pointer;">
+                📁 رفع من المعرض
+                <input type="file" id="galleryBarcode" accept="image/*" style="display: none;" onchange="readComplexQrFromFile(event)">
+            </label>
+
+            <button onclick="triggerPrint()" class="no-print" style="background:var(--accent);">🖨️ طباعة / PDF</button>
+        </div>
+
+        <div id="reader" class="no-print"></div>
+
+        <div class="grids-container" id="sixGridsContainer"></div>
+    </div>
+
+    <div id="qr-file-container" style="display:none;"></div>
+
+    <script>
+        const SUPABASE_URL = 'https://gwpgfwytwiitzbuupqvw.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3cGdmd3l0d2lpdHpidXVwcXZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAxNjQ5ODksImV4cCI6MjEwNTc0MDk4OX0.2X5J8Wj1Qfj1-q9ExwG8AnoXpA6mqLXfrAOuQiNNye4';
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentUser = null;
+        let targetManagedUser = null;
+        let currentLogoBase64 = '';
+        let html5QrCode = null;
+        let fileHtml5QrCode = null;
+        let scannedSerials = [];
+        let tableModels = {}; 
+        let tableColors = {}; 
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const { data: settingsData } = await _supabase.from('app_settings').select('*');
+                if (settingsData) {
+                    settingsData.forEach(item => {
+                        const val = item.setting_value;
+                        if (item.setting_key === 'login_title' && val) {
+                            const titleEl = document.getElementById('loginTitleText');
+                            if (titleEl) titleEl.innerText = val;
+                        }
+                        if (item.setting_key === 'maintenance_mode') {
+                            if (val === 'true' || val.toLowerCase().includes('true') || val.includes('تفعيل') || val.includes('عمل')) {
+                                const overlay = document.getElementById('loginOverlay');
+                                if (overlay) {
+                                    overlay.innerHTML = `
+                                        <div class="login-card" style="text-align:center;">
+                                            <h3 style="color: var(--danger); margin-bottom:15px;">⚠️ الموقع تحت الصيانة حالياً</h3>
+                                            <p style="font-size:13px; color: var(--text-secondary);">نعمل على تحديث النظام، يرجى العودة لاحقاً.</p>
+                                        </div>
+                                    `;
+                                    overlay.style.display = 'flex';
+                                    return;
+                                }
+                            }
+                        }
+                    });
+                }
+            } catch (e) {
+                console.log('App settings fetch error:', e);
+            }
+
+            const savedUser = localStorage.getItem('saved_username');
+            const savedPass = localStorage.getItem('saved_password');
+            if (savedUser && savedPass) {
+                document.getElementById('loginUser').value = savedUser;
+                document.getElementById('loginPass').value = savedPass;
+                document.getElementById('rememberMeCheck').checked = true;
+                
+                // تسجيل الدخول تلقائياً عند إعادة التحميل (Refresh) إذا كانت البيانات محفوظة
+                await performAutoLogin(savedUser, savedPass);
+            }
+            renderSixGrids();
+        });
+
+        async function performAutoLogin(u, p) {
+            const errDiv = document.getElementById('loginError');
+            try {
+                const { data, error } = await _supabase.from('subscriptions').select('*').eq('username', u).eq('password', p).single();
+                if (error || !data) return;
+
+                const now = new Date();
+                const expiry = new Date(data.expiry_date);
+
+                if (!data.is_active || expiry < now) {
+                    return;
+                }
+
+                currentUser = data;
+                targetManagedUser = data.username;
+
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('appContainer').style.display = 'block';
+
+                if (currentUser.role === 'admin') {
+                    document.getElementById('adminPanel').style.display = 'block';
+                    document.getElementById('saveCompanyBtn').style.display = 'inline-flex';
+                    document.getElementById('logoHintText').style.display = 'block';
+                    makeInputsEditable(true);
+                    loadAllSubscribers();
+                } else {
+                    document.getElementById('adminPanel').style.display = 'none';
+                    document.getElementById('saveCompanyBtn').style.display = 'none';
+                    document.getElementById('logoHintText').style.display = 'none';
+                    makeInputsEditable(false);
+                }
+
+                loadCompanySettings(targetManagedUser);
+
+            } catch (err) {
+                console.log('Auto login error:', err);
+            }
+        }
+
+        function triggerPrint() {
+            window.focus();
+            setTimeout(() => {
+                window.print();
+            }, 150);
+        }
+
+        async function handleLogin() {
+            const u = document.getElementById('loginUser').value.trim();
+            const p = document.getElementById('loginPass').value.trim();
+            const remember = document.getElementById('rememberMeCheck').checked;
+            const errDiv = document.getElementById('loginError');
+
+            if(!u || !p) {
+                errDiv.style.display = 'block';
+                errDiv.innerText = 'الرجاء إدخال اسم المستخدم وكلمة المرور';
+                return;
+            }
+
+            try {
+                const { data, error } = await _supabase.from('subscriptions').select('*').eq('username', u).eq('password', p).single();
+                if (error || !data) throw new Error('بيانات غير صحيحة');
+
+                const now = new Date();
+                const expiry = new Date(data.expiry_date);
+
+                if (!data.is_active || expiry < now) {
+                    errDiv.style.display = 'block';
+                    errDiv.innerText = 'عذراً، انتهت مدة الاشتراك أو الحساب موقوف!';
+                    return;
+                }
+
+                if (remember) {
+                    localStorage.setItem('saved_username', u);
+                    localStorage.setItem('saved_password', p);
+                } else {
+                    localStorage.removeItem('saved_username');
+                    localStorage.removeItem('saved_password');
+                }
+
+                currentUser = data;
+                targetManagedUser = data.username;
+
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('appContainer').style.display = 'block';
+
+                if (currentUser.role === 'admin') {
+                    document.getElementById('adminPanel').style.display = 'block';
+                    document.getElementById('saveCompanyBtn').style.display = 'inline-flex';
+                    document.getElementById('logoHintText').style.display = 'block';
+                    makeInputsEditable(true);
+                    loadAllSubscribers();
+                } else {
+                    document.getElementById('adminPanel').style.display = 'none';
+                    document.getElementById('saveCompanyBtn').style.display = 'none';
+                    document.getElementById('logoHintText').style.display = 'none';
+                    makeInputsEditable(false);
+                }
+
+                loadCompanySettings(targetManagedUser);
+
+            } catch (err) {
+                errDiv.style.display = 'block';
+                errDiv.innerText = 'خطأ في التحقق من الحساب أو السيرفر!';
+            }
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            targetManagedUser = null;
+            localStorage.removeItem('saved_username');
+            localStorage.removeItem('saved_password');
+            document.getElementById('appContainer').style.display = 'none';
+            document.getElementById('loginOverlay').style.display = 'flex';
+        }
+
+        function makeInputsEditable(isEditable) {
+            const inputs = document.querySelectorAll('.company-card input');
+            inputs.forEach(input => input.readOnly = !isEditable);
+        }
+
+        async function loadAllSubscribers() {
+            const { data } = await _supabase.from('subscriptions').select('*');
+            const tbody = document.getElementById('subscribersTableBody');
+            tbody.innerHTML = '';
+
+            if(data) {
+                const today = new Date();
+                today.setHours(0,0,0,0);
+
+                data.forEach(sub => {
+                    const expiryDate = new Date(sub.expiry_date);
+                    expiryDate.setHours(0,0,0,0);
+                    
+                    const diffTime = expiryDate - today;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                    let statusBadge = '';
+                    if (!sub.is_active) {
+                        statusBadge = `<span class="badge-expired">🔴 موقوف</span>`;
+                    } else if (diffDays < 0) {
+                        statusBadge = `<span class="badge-expired">⚠️ منتهي (${Math.abs(diffDays)} يوم)</span>`;
+                    } else if (diffDays === 0) {
+                        statusBadge = `<span class="badge-expired">⚠️ ينتهي اليوم</span>`;
+                    } else {
+                        statusBadge = `<span class="badge-active">🟢 باقي ${diffDays} يوم</span>`;
+                    }
+
+                    const row = tbody.insertRow();
+                    row.innerHTML = `
+                        <td><b>${sub.username}</b></td>
+                        <td><input type="text" value="${sub.password}" id="pass_${sub.username}" style="padding:2px; border-radius:3px; border:1px solid #ccc; width:70px; text-align:center;"></td>
+                        <td><input type="date" value="${sub.expiry_date}" id="exp_${sub.username}" style="padding:2px; border-radius:3px; border:1px solid #ccc; width:90px;"></td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <button class="btn-sm btn-edit-user" onclick="updateUserCredentials('${sub.username}')" title="حفظ">💾</button>
+                            <button class="btn-sm btn-edit-user" onclick="adminSelectUserToManage('${sub.username}')" title="إدارة">🏢</button>
+                            <button class="btn-sm btn-toggle" onclick="toggleActive('${sub.username}', ${!sub.is_active})">${sub.is_active ? '⏸' : '▶'}</button>
+                            <button class="btn-sm btn-delete" onclick="deleteUser('${sub.username}')" title="حذف">🗑</button>
+                        </td>
+                    `;
+                });
+            }
+        }
+
+        async function updateUserCredentials(username) {
+            const newPass = document.getElementById(`pass_${username}`).value.trim();
+            const newExp = document.getElementById(`exp_${username}`).value;
+
+            if(!newPass || !newExp) {
+                alert('الرجاء التأكد من تعبئة كلمة المرور وتاريخ الانتهاء');
+                return;
+            }
+
+            const { error } = await _supabase.from('subscriptions').update({ password: newPass, expiry_date: newExp }).eq('username', username);
+            if(error) {
+                alert('خطأ أثناء التحديث: ' + error.message);
+            } else {
+                alert(`تم تحديث بيانات المشترك (${username}) بنجاح!`);
+                loadAllSubscribers();
+            }
+        }
+
+        function adminSelectUserToManage(username) {
+            targetManagedUser = username;
+            loadCompanySettings(username);
+            alert(`تم اختيار المشترك (${username}) لتعديل بيانات منشأته.`);
+            window.scrollTo({ top: 200, behavior: 'smooth' });
+        }
+
+        async function addSubscriber() {
+            const username = document.getElementById('newUsername').value.trim();
+            const password = document.getElementById('newPassword').value.trim();
+            const expiry_date = document.getElementById('newExpiry').value;
+            const role = document.getElementById('newRole').value;
+
+            if(!username || !password || !expiry_date) return alert('الرجاء تعبئة كافة الحقول');
+
+            const { error } = await _supabase.from('subscriptions').insert([{ username, password, expiry_date, role, is_active: true }]);
+            if(error) alert('خطأ: المستخدم موجود مسبقاً أو بيانات غير صالحة');
+            else {
+                alert('تمت إضافة المشترك بنجاح');
+                document.getElementById('newUsername').value = '';
+                document.getElementById('newPassword').value = '';
+                loadAllSubscribers();
+            }
+        }
+
+        async function toggleActive(username, newStatus) {
+            await _supabase.from('subscriptions').update({ is_active: newStatus }).eq('username', username);
+            loadAllSubscribers();
+        }
+
+        async function deleteUser(username) {
+            if(confirm(`هل أنت متأكد من حذف الحساب (${username})؟`)) {
+                await _supabase.from('subscriptions').delete().eq('username', username);
+                loadAllSubscribers();
+            }
+        }
+
+        async function loadCompanySettings(username) {
+            try {
+                const { data } = await _supabase.from('company_settings').select('*').eq('username', username).maybeSingle();
+                if (data) {
+                    fillCompanyForm(data);
+                } else {
+                    clearCompanyForm();
+                }
+            } catch (e) {
+                clearCompanyForm();
+            }
+        }
+
+        function fillCompanyForm(data) {
+            document.getElementById('compName').value = data.comp_name || data.name || '';
+            document.getElementById('phone').value = data.phone || '';
+            document.getElementById('email').value = data.email || '';
+            document.getElementById('commercialRecord').value = data.commercial_record || data.commercialRecord || '';
+            document.getElementById('taxNumber').value = data.tax_number || data.taxNumber || '';
+            if(data.logo_url || data.logo) {
+                currentLogoBase64 = data.logo_url || data.logo;
+                document.getElementById('logoPreview').innerHTML = `<img src="${currentLogoBase64}">`;
+            } else {
+                currentLogoBase64 = '';
+                document.getElementById('logoPreview').innerHTML = `الشعار`;
+            }
+        }
+
+        function clearCompanyForm() {
+            document.getElementById('compName').value = '';
+            document.getElementById('phone').value = '';
+            document.getElementById('email').value = '';
+            document.getElementById('commercialRecord').value = '';
+            document.getElementById('taxNumber').value = '';
+            currentLogoBase64 = '';
+            document.getElementById('logoPreview').innerHTML = `الشعار`;
+        }
+
+        async function saveCompanySettings() {
+            if (currentUser && currentUser.role !== 'admin') {
+                alert('عذراً، التعديل متاح للأدمن فقط.');
+                return;
+            }
+
+            const payload = {
+                username: targetManagedUser,
+                comp_name: document.getElementById('compName').value,
+                phone: document.getElementById('phone').value,
+                email: document.getElementById('email').value,
+                commercial_record: document.getElementById('commercialRecord').value,
+                tax_number: document.getElementById('taxNumber').value,
+                logo_url: currentLogoBase64
+            };
+
+            try {
+                const { error } = await _supabase.from('company_settings').upsert(payload, { onConflict: 'username' });
+
+                if(error) {
+                    alert('خطأ في الحفظ السحابي: ' + error.message);
+                } else {
+                    alert(`تم حفظ وتحديث بيانات منشأة المشترك (${targetManagedUser}) بنجاح تام!`);
+                }
+            } catch (err) {
+                alert('حدث خطأ أثناء الاتصال بقاعدة البيانات.');
+            }
+        }
+
+        function triggerLogoUpload() {
+            if (currentUser && currentUser.role !== 'admin') {
+                document.getElementById('logoInput').click();
+            } else {
+                alert('رفع وتغيير الشعار متاح من خلال لوحة الأدمن فقط.');
+            }
+        }
+
+        function handleLogoUpload(e) {
+            const file = e.target.files[0];
+            if(file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    currentLogoBase64 = evt.target.result;
+                    document.getElementById('logoPreview').innerHTML = `<img src="${currentLogoBase64}">`;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function startRealBarcodeScanner() {
+            document.getElementById('reader').style.display = 'block';
+            document.getElementById('scanBtn').style.display = 'none';
+            document.getElementById('stopBtn').style.display = 'inline-block';
+
+            html5QrCode = new Html5Qrcode("reader");
+            
+            const config = { 
+                fps: 20, 
+                qrbox: { width: 280, height: 180 },
+                aspectRatio: 1.0,
+                formatsToSupport: [
+                    Html5QrcodeSupportedFormats.QR_CODE,
+                    Html5QrcodeSupportedFormats.DATA_MATRIX,
+                    Html5QrcodeSupportedFormats.PDF_417,
+                    Html5QrcodeSupportedFormats.CODE_128,
+                    Html5QrcodeSupportedFormats.CODE_39,
+                    Html5QrcodeSupportedFormats.EAN_13,
+                    Html5QrcodeSupportedFormats.UPC_A
+                ]
+            };
+
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                config,
+                (decodedText) => {
+                    addSerialToTable(decodedText);
+                    stopBarcodeScanner();
+                },
+                (err) => {}
+            ).catch(err => {
+                alert("تعذر فتح الكاميرا أو الوصول إليها");
+                stopBarcodeScanner();
+            });
+        }
+
+        function stopBarcodeScanner() {
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => { html5QrCode.clear(); resetUI(); }).catch(() => resetUI());
+            } else resetUI();
+        }
+
+        function resetUI() {
+            document.getElementById('reader').style.display = 'none';
+            document.getElementById('scanBtn').style.display = 'inline-block';
+            document.getElementById('stopBtn').style.display = 'none';
+        }
+
+        async function readComplexQrFromFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (!fileHtml5QrCode) fileHtml5QrCode = new Html5Qrcode("qr-file-container");
+
+            try {
+                const decodedText = await fileHtml5QrCode.scanFile(file, true);
+                if (decodedText) addSerialToTable(decodedText);
+            } catch (err) {
+                alert("تعذر قراءة الكود المعقد من الصورة، تأكد من وضوحها.");
+            }
+            event.target.value = '';
+        }
+
+        function addSerialToTable(codeText) {
+            if (!codeText) return;
+
+            let rawItems = codeText.split(/\r?\n|,|\t|;|\s+/).map(item => item.trim()).filter(item => item !== "");
+            
+            let validItems = [];
+            rawItems.forEach(item => {
+                let cleanItem = item.replace(/[^a-zA-Z0-9]/g, '');
+                if (cleanItem.length >= 5) {
+                    validItems.push(cleanItem);
+                }
+            });
+
+            if (validItems.length === 0 && codeText.trim() !== "") {
+                validItems.push(codeText.trim());
+            }
+
+            validItems.forEach(item => {
+                scannedSerials.push(item);
+            });
+
+            renderSixGrids();
+        }
+
+        function updateModelVal(globalIndex, val) {
+            tableModels[globalIndex] = val;
+        }
+
+        function updateColorVal(globalIndex, val) {
+            tableColors[globalIndex] = val;
+        }
+
+        function renderSixGrids() {
+            const container = document.getElementById('sixGridsContainer');
+            container.innerHTML = '';
+
+            for (let gridIdx = 1; gridIdx <= 6; gridIdx++) {
+                const boxDiv = document.createElement('div');
+                boxDiv.className = 'single-grid-box';
+
+                let tableHTML = `
+                    <style>
+                        .custom-table th, .custom-table td {
+                            border: 1px solid #000;
+                            padding: 0px;
+                            text-align: center;
+                            font-size: 5.1px;
+                            height: 100%;
+                            overflow: hidden;
+                            white-space: nowrap;
+                            text-overflow: ellipsis;
+                            line-height: 1.05;
+                        }
+                    </style>
+                    <table class="custom-table">
+                        <thead>
+                            <tr>
+                                <th class="col-num">الرقم</th>
+                                <th class="col-imei">IMEI 1</th>
+                                <th class="col-carton">رقم</th>
+                                <th class="col-model">الموديل</th>
+                                <th class="col-color">اللون</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                for (let rowIdx = 1; rowIdx <= 20; rowIdx++) {
+                    const serialGlobalIndex = (gridIdx - 1) * 20 + (rowIdx - 1);
+                    const serialValue = scannedSerials[serialGlobalIndex] || '';
+                    const modelValue = tableModels[serialGlobalIndex] || '';
+                    const colorValue = tableColors[serialGlobalIndex] || '';
+
+                    if (rowIdx === 1) {
+                        tableHTML += `
+                            <tr>
+                                <td>${rowIdx}</td>
+                                <td style="text-align:right; padding-right:1px;">${serialValue}</td>
+                                <td rowspan="20" style="vertical-align: middle; text-align: center; font-weight: 900; font-size: 8.5px;">${gridIdx}</td>
+                                <td><input type="text" class="grid-input" value="${modelValue}" oninput="updateModelVal(${serialGlobalIndex}, this.value)"></td>
+                                <td><input type="text" class="grid-input" value="${colorValue}" oninput="updateColorVal(${serialGlobalIndex}, this.value)"></td>
+                            </tr>
+                        `;
+                    } else {
+                        tableHTML += `
+                            <tr>
+                                <td>${rowIdx}</td>
+                                <td style="text-align:right; padding-right:1px;">${serialValue}</td>
+                                <td><input type="text" class="grid-input" value="${modelValue}" oninput="updateModelVal(${serialGlobalIndex}, this.value)"></td>
+                                <td><input type="text" class="grid-input" value="${colorValue}" oninput="updateColorVal(${serialGlobalIndex}, this.value)"></td>
+                            </tr>
+                        `;
+                    }
+                }
+
+                tableHTML += `</tbody></table>`;
+                boxDiv.innerHTML = tableHTML;
+                container.appendChild(boxDiv);
+            }
+        }
+    </script>
+</body>
+</html>
