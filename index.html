@@ -62,17 +62,18 @@
         .admin-grid input, .admin-grid select { padding: 2px; border: 1px solid #cbd5e1; border-radius: 3px; font-size: 8px; background: #fff; text-align: center; }
         .btn-add { background: var(--success); color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: 700; padding: 2px; }
 
-        .company-card { background: #ffffff; border: 1.5px solid #000; padding: 10px 10px; border-radius: 4px; margin-top: 6px; margin-bottom: 5px; }
+        /* تعديل مقاسات بطاقة المنشأة لتكبر خانة الشعار وتقل المساحة الفاضية */
+        .company-card { background: #ffffff; border: 1.5px solid #000; padding: 3px 6px; border-radius: 4px; margin-bottom: 2px; }
         .no-dup-table { width: 100%; border-collapse: collapse; }
-        .no-dup-table td { padding: 4px 6px; border: none; vertical-align: middle; }
+        .no-dup-table td { padding: 0px 4px; border: none; vertical-align: middle; }
         
-        .logo-box { width: 50px; height: 50px; border: 1.5px dashed var(--accent); display: flex; align-items: center; justify-content: center; text-align: center; font-size: 8px; color: var(--text-secondary); background: #f8fafc; border-radius: 50%; overflow: hidden; cursor: pointer; margin: 0 auto; }
+        .logo-box { width: 55px; height: 55px; border: 1.5px dashed var(--accent); display: flex; align-items: center; justify-content: center; text-align: center; font-size: 8px; color: var(--text-secondary); background: #f8fafc; border-radius: 50%; overflow: hidden; cursor: pointer; margin: 0 auto; }
         .logo-box img { width: 100%; height: 100%; object-fit: cover; }
-        .logo-hint { font-size: 6px; color: var(--danger); font-weight: 700; text-align: center; display: block; margin-top: 3px; }
+        .logo-hint { font-size: 5px; color: var(--danger); font-weight: 700; text-align: center; display: block; margin-top: 1px; }
 
-        .input-group { display: flex; align-items: center; gap: 6px; width: 100%; margin-bottom: 5px; }
-        .input-group label { font-size: 8px; font-weight: 700; color: var(--text-secondary); width: 65px; flex-shrink: 0; text-align: left; }
-        .company-card input { width: 100%; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 3px; font-size: 9px; background: #fff; font-weight: 700; color: var(--text-main); text-align: right; }
+        .input-group { display: flex; align-items: center; gap: 4px; width: 100%; margin-bottom: 1px; }
+        .input-group label { font-size: 7px; font-weight: 700; color: var(--text-secondary); width: 55px; flex-shrink: 0; text-align: left; }
+        .company-card input { width: 100%; padding: 1px 3px; border: 1px solid #cbd5e1; border-radius: 3px; font-size: 8px; background: #fff; font-weight: 700; color: var(--text-main); text-align: right; }
         .company-card input:read-only { background: #f8fafc; color: #475569; border-color: #e2e8f0; }
 
         .actions { display: flex; flex-wrap: wrap; gap: 2px; margin-bottom: 2px; justify-content: center; }
@@ -86,46 +87,58 @@
         .pages-wrapper {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 2px;
+        }
+
+        .print-page-section {
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            margin-bottom: 2px;
+        }
+
+        .print-company-card {
+            display: none;
         }
 
         .grids-container {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             grid-template-rows: repeat(3, 1fr);
-            gap: 1px;
-            height: calc(100vh - 75px);
-            page-break-after: always;
+            gap: 1.5px;
         }
 
         .single-grid-box {
             border: 1px solid #000;
             background: #fff;
-            padding: 0px;
-            border-radius: 1px;
+            padding: 0.5px;
             display: flex;
             flex-direction: column;
-            height: 100%;
         }
 
-        .custom-table { width: 100%; height: 100%; border-collapse: collapse; table-layout: fixed; }
+        .custom-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         .custom-table th, .custom-table td {
             border: 1px solid #000;
             padding: 0px;
             text-align: center;
-            font-size: 4.8px;
-            height: 100%;
+            font-size: 5px;
             overflow: hidden;
             white-space: nowrap;
             text-overflow: ellipsis;
-            line-height: 1.02;
+            line-height: 1.0;
+        }
+        .custom-table td:first-child {
+            font-size: 6.5px !important;
+            font-weight: 900 !important;
+            color: #000 !important;
+            background-color: #f8fafc;
         }
         .custom-table th {
             background-color: #f1f5f9;
             color: #000;
             font-weight: 900;
-            font-size: 5.8px;
-            height: 14px;
+            font-size: 5.5px;
+            height: 10px;
         }
 
         .grid-input {
@@ -134,15 +147,13 @@
             border: none;
             background: transparent;
             text-align: center;
-            font-size: 4.8px;
+            font-size: 5px;
             font-family: 'Cairo', sans-serif;
             padding: 0;
             margin: 0;
             outline: none;
         }
-        .grid-input:focus {
-            background: #eef2ff;
-        }
+        .grid-input:focus { background: #eef2ff; }
 
         .col-num { width: 8%; }
         .col-imei { width: 46%; }
@@ -164,75 +175,106 @@
         @media print {
             @page {
                 size: A4 portrait;
-                margin: 1mm;
+                margin: 2mm;
             }
-            .no-print, .actions, #reader, .top-bar, #adminPanel, .logo-hint, .table-responsive { 
+            .no-print, .actions, #reader, .top-bar, #adminPanel, .logo-hint, .table-responsive, #mainCompanyCard { 
                 display: none !important; 
+            }
+            .print-company-card {
+                display: block !important;
             }
             body, html { 
                 background: #fff !important; 
                 padding: 0 !important; 
                 margin: 0 !important;
                 width: 210mm;
-                height: 295mm;
+                height: 297mm;
             }
             .container { 
                 box-shadow: none !important; 
                 padding: 0 !important; 
-                width: 208mm !important; 
+                width: 100% !important; 
                 border: none !important; 
                 display: block !important; 
-                margin: 0 auto !important; 
+                margin: 0 !important; 
             }
             .company-card { 
-                border: 1.5px solid #000 !important; 
-                padding: 6px 7px !important; 
-                margin-top: 2px !important;
-                margin-bottom: 3px !important; 
+                border: 1px solid #000 !important; 
+                padding: 2px 4px !important; 
+                margin-top: 0 !important;
+                margin-bottom: 1px !important; 
             }
             .company-card input { 
                 border: none !important; 
                 background: transparent !important; 
-                font-size: 8px !important; 
+                font-size: 6.5px !important; 
                 padding: 0 !important; 
             }
             .input-group label {
-                font-size: 7.5px !important;
-                width: 60px !important;
+                font-size: 6px !important;
+                width: 48px !important;
+                text-align: right !important;
             }
             .logo-box { 
-                border: 1.5px solid #000 !important; 
-                width: 40px !important; 
-                height: 40px !important; 
-                font-size: 6px !important;
+                border: 1px solid #000 !important; 
+                width: 42px !important; 
+                height: 42px !important; 
+                font-size: 4px !important;
+            }
+            .pages-wrapper {
+                display: block !important;
+            }
+            /* منع إنشاء صفحات فارغة نهائياً بالتحكم الدقيق في ارتفاع كل صفحة */
+            .print-page-section {
+                height: 288mm !important;
+                max-height: 288mm !important;
+                display: flex !important;
+                flex-direction: column !important;
+                page-break-after: always !important;
+                page-break-inside: avoid !important;
+                box-sizing: border-box !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .print-page-section:last-child {
+                page-break-after: avoid !important;
             }
             .grids-container {
                 display: grid !important;
                 grid-template-columns: repeat(2, 1fr) !important;
                 grid-template-rows: repeat(3, 1fr) !important;
-                gap: 1px !important;
-                height: 252mm !important;
-                page-break-after: always !important;
+                gap: 1.5px !important;
+                width: 100% !important;
+                flex-grow: 1 !important;
             }
             .single-grid-box {
                 border: 1px solid #000 !important;
                 height: 100% !important;
+                padding: 0px !important;
+                display: flex !important;
+                flex-direction: column !important;
+            }
+            .custom-table {
+                height: 100% !important;
             }
             .custom-table th, .custom-table td {
                 border: 1px solid #000 !important;
-                font-size: 4.8px !important;
-                height: auto !important;
+                font-size: 4.5px !important;
                 padding: 0px !important;
-                line-height: 1.02;
+                height: auto !important;
+            }
+            .custom-table td:first-child {
+                font-size: 5.5px !important;
+                font-weight: 900 !important;
             }
             .custom-table th {
-                font-size: 5.8px !important;
-                height: 13.5px !important;
+                font-size: 4.5px !important;
+                height: 8.5px !important;
             }
             .grid-input {
                 border: none !important;
                 background: transparent !important;
-                font-size: 4.8px !important;
+                font-size: 4.5px !important;
             }
         }
     </style>
@@ -287,38 +329,39 @@
             </div>
         </div>
 
-        <div class="company-card">
+        <!-- بطاقة المنشأة الأساسية -->
+        <div class="company-card" id="mainCompanyCard">
             <table class="no-dup-table">
                 <tr>
-                    <td style="width: 40%; vertical-align: top;">
+                    <td style="width: 37%; vertical-align: top;">
                         <div class="input-group">
                             <label>اسم المنشأة:</label>
-                            <input type="text" id="compName" placeholder="اسم المنشأة" readonly>
+                            <input type="text" id="compName" placeholder="اسم المنشأة" readonly oninput="syncCompanyData('compName', this.value)">
                         </div>
                         <div class="input-group">
                             <label>الرقم الضريبي:</label>
-                            <input type="text" id="taxNumber" placeholder="الرقم الضريبي" readonly>
+                            <input type="text" id="taxNumber" placeholder="الرقم الضريبي" readonly oninput="syncCompanyData('taxNumber', this.value)">
                         </div>
                         <div class="input-group">
                             <label>السجل التجاري:</label>
-                            <input type="text" id="commercialRecord" placeholder="السجل التجاري" readonly>
+                            <input type="text" id="commercialRecord" placeholder="السجل التجاري" readonly oninput="syncCompanyData('commercialRecord', this.value)">
                         </div>
                     </td>
                     
-                    <td style="width: 20%; text-align: center; vertical-align: middle;">
+                    <td style="width: 26%; text-align: center; vertical-align: middle;">
                         <div class="logo-box" id="logoPreview" onclick="triggerLogoUpload()">الشعار</div>
                         <input type="file" id="logoInput" accept="image/*" style="display:none;" onchange="handleLogoUpload(event)">
                         <span class="logo-hint" id="logoHintText" style="display:none;">تعديل</span>
                     </td>
 
-                    <td style="width: 40%; vertical-align: top;">
-                        <div class="input-group">
-                            <label>رقم التليفون:</label>
-                            <input type="text" id="phone" placeholder="رقم التليفون" readonly>
+                    <td style="width: 37%; vertical-align: top;">
+                        <div class="input-group" style="justify-content: flex-end;">
+                            <label style="text-align: right;">رقم التليفون:</label>
+                            <input type="text" id="phone" placeholder="رقم التليفون" readonly style="text-align: right;" oninput="syncCompanyData('phone', this.value)">
                         </div>
-                        <div class="input-group">
-                            <label>البريد الإلكتروني:</label>
-                            <input type="email" id="email" placeholder="البريد الإلكتروني" readonly>
+                        <div class="input-group" style="justify-content: flex-end;">
+                            <label style="text-align: right;">البريد الإلكتروني:</label>
+                            <input type="email" id="email" placeholder="البريد الإلكتروني" readonly style="text-align: right;" oninput="syncCompanyData('email', this.value)">
                         </div>
                     </td>
                 </tr>
@@ -370,21 +413,6 @@
                         if (item.setting_key === 'login_title' && val) {
                             const titleEl = document.getElementById('loginTitleText');
                             if (titleEl) titleEl.innerText = val;
-                        }
-                        if (item.setting_key === 'maintenance_mode') {
-                            if (val === 'true' || val.toLowerCase().includes('true') || val.includes('تفعيل') || val.includes('عمل')) {
-                                const overlay = document.getElementById('loginOverlay');
-                                if (overlay) {
-                                    overlay.innerHTML = `
-                                        <div class="login-card" style="text-align:center;">
-                                            <h3 style="color: var(--danger); margin-bottom:15px;">⚠️ الموقع تحت الصيانة حالياً</h3>
-                                            <p style="font-size:13px; color: var(--text-secondary);">نعمل على تحديث النظام، يرجى العودة لاحقاً.</p>
-                                        </div>
-                                    `;
-                                    overlay.style.display = 'flex';
-                                    return;
-                                }
-                            }
                         }
                     });
                 }
@@ -612,6 +640,7 @@
                 currentLogoBase64 = '';
                 document.getElementById('logoPreview').innerHTML = `الشعار`;
             }
+            syncAllCompanyCards();
         }
 
         function clearCompanyForm() {
@@ -622,6 +651,30 @@
             document.getElementById('taxNumber').value = '';
             currentLogoBase64 = '';
             document.getElementById('logoPreview').innerHTML = `الشعار`;
+            syncAllCompanyCards();
+        }
+
+        function syncCompanyData(field, val) {
+            const elements = document.querySelectorAll(`.${field}-sync`);
+            elements.forEach(el => el.value = val);
+        }
+
+        function syncAllCompanyCards() {
+            const compName = document.getElementById('compName').value;
+            const taxNumber = document.getElementById('taxNumber').value;
+            const commercialRecord = document.getElementById('commercialRecord').value;
+            const phone = document.getElementById('phone').value;
+            const email = document.getElementById('email').value;
+            const logoHtml = document.getElementById('logoPreview').innerHTML;
+
+            document.querySelectorAll('.print-company-card').forEach(card => {
+                card.querySelector('.print-compName').value = compName;
+                card.querySelector('.print-taxNumber').value = taxNumber;
+                card.querySelector('.print-commercialRecord').value = commercialRecord;
+                card.querySelector('.print-phone').value = phone;
+                card.querySelector('.print-email').value = email;
+                card.querySelector('.print-logoPreview').innerHTML = logoHtml;
+            });
         }
 
         async function saveCompanySettings() {
@@ -659,6 +712,7 @@
                 reader.onload = function(evt) {
                     currentLogoBase64 = evt.target.result;
                     document.getElementById('logoPreview').innerHTML = `<img src="${currentLogoBase64}">`;
+                    syncAllCompanyCards();
                 };
                 reader.readAsDataURL(file);
             }
@@ -789,17 +843,67 @@
             const wrapper = document.getElementById('pagesWrapperContainer');
             wrapper.innerHTML = '';
 
-            // كل صفحة تحتوي على 6 جداول، وكل جدول يحتوي على 21 صفاً (إجمالي الصفحة = 126 سيريال)
-            const itemsPerPage = 126;
+            const itemsPerPage = 126; 
             const totalPages = Math.max(1, Math.ceil(scannedSerials.length / itemsPerPage));
 
+            const compName = document.getElementById('compName').value;
+            const taxNumber = document.getElementById('taxNumber').value;
+            const commercialRecord = document.getElementById('commercialRecord').value;
+            const phone = document.getElementById('phone').value;
+            const email = document.getElementById('email').value;
+            const logoHtml = document.getElementById('logoPreview').innerHTML;
+
             for (let pageIdx = 0; pageIdx < totalPages; pageIdx++) {
+                const pageSection = document.createElement('div');
+                pageSection.className = 'print-page-section';
+
+                const printCardDiv = document.createElement('div');
+                printCardDiv.className = 'company-card print-company-card';
+                printCardDiv.innerHTML = `
+                    <table class="no-dup-table">
+                        <tr>
+                            <td style="width: 37%; vertical-align: top;">
+                                <div class="input-group">
+                                    <label>اسم المنشأة:</label>
+                                    <input type="text" class="print-compName" value="${compName}" readonly>
+                                </div>
+                                <div class="input-group">
+                                    <label>الرقم الضريبي:</label>
+                                    <input type="text" class="print-taxNumber" value="${taxNumber}" readonly>
+                                </div>
+                                <div class="input-group">
+                                    <label>السجل التجاري:</label>
+                                    <input type="text" class="print-commercialRecord" value="${commercialRecord}" readonly>
+                                </div>
+                            </td>
+                            
+                            <td style="width: 26%; text-align: center; vertical-align: middle;">
+                                <div class="logo-box print-logoPreview">${logoHtml}</div>
+                            </td>
+
+                            <td style="width: 37%; vertical-align: top;">
+                                <div class="input-group" style="justify-content: flex-end;">
+                                    <label style="text-align: right;">رقم التليفون:</label>
+                                    <input type="text" class="print-phone" value="${phone}" readonly style="text-align: right;">
+                                </div>
+                                <div class="input-group" style="justify-content: flex-end;">
+                                    <label style="text-align: right;">البريد الإلكتروني:</label>
+                                    <input type="email" class="print-email" value="${email}" readonly style="text-align: right;">
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                `;
+                pageSection.appendChild(printCardDiv);
+
                 const gridContainer = document.createElement('div');
                 gridContainer.className = 'grids-container';
 
                 for (let gridIdx = 1; gridIdx <= 6; gridIdx++) {
                     const boxDiv = document.createElement('div');
                     boxDiv.className = 'single-grid-box';
+
+                    const absoluteGridNumber = (pageIdx * 6) + gridIdx;
 
                     let tableHTML = `
                         <table class="custom-table">
@@ -817,6 +921,8 @@
 
                     for (let rowIdx = 1; rowIdx <= 21; rowIdx++) {
                         const globalIndex = (pageIdx * itemsPerPage) + ((gridIdx - 1) * 21) + (rowIdx - 1);
+                        const displayIndex = rowIdx;
+
                         const serialValue = scannedSerials[globalIndex] || '';
                         const modelValue = tableModels[globalIndex] || '';
                         const colorValue = tableColors[globalIndex] || '';
@@ -824,9 +930,9 @@
                         if (rowIdx === 1) {
                             tableHTML += `
                                 <tr>
-                                    <td>${rowIdx}</td>
+                                    <td>${displayIndex}</td>
                                     <td style="text-align:right; padding:0;"><input type="text" class="grid-input" value="${serialValue}" oninput="updateSerialVal(${globalIndex}, this.value)" style="text-align:right; padding-right:1px;"></td>
-                                    <td rowspan="21" style="vertical-align: middle; text-align: center; font-weight: 900; font-size: 8px;">${gridIdx}</td>
+                                    <td rowspan="21" style="vertical-align: middle; text-align: center; font-weight: 900; font-size: 6.5px;">${absoluteGridNumber}</td>
                                     <td><input type="text" class="grid-input" value="${modelValue}" oninput="updateModelVal(${globalIndex}, this.value)"></td>
                                     <td><input type="text" class="grid-input" value="${colorValue}" oninput="updateColorVal(${globalIndex}, this.value)"></td>
                                 </tr>
@@ -834,7 +940,7 @@
                         } else {
                             tableHTML += `
                                 <tr>
-                                    <td>${rowIdx}</td>
+                                    <td>${displayIndex}</td>
                                     <td style="text-align:right; padding:0;"><input type="text" class="grid-input" value="${serialValue}" oninput="updateSerialVal(${globalIndex}, this.value)" style="text-align:right; padding-right:1px;"></td>
                                     <td><input type="text" class="grid-input" value="${modelValue}" oninput="updateModelVal(${globalIndex}, this.value)"></td>
                                     <td><input type="text" class="grid-input" value="${colorValue}" oninput="updateColorVal(${globalIndex}, this.value)"></td>
@@ -848,7 +954,8 @@
                     gridContainer.appendChild(boxDiv);
                 }
 
-                wrapper.appendChild(gridContainer);
+                pageSection.appendChild(gridContainer);
+                wrapper.appendChild(pageSection);
             }
         }
     </script>
