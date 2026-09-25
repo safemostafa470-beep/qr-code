@@ -79,8 +79,15 @@
         .actions button, .actions label { flex: 1; min-width: 70px; max-width: 100px; padding: 3px; background: var(--primary); color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 8px; font-weight: 700; text-align: center; display: inline-flex; align-items: center; justify-content: center; gap: 2px; }
         .actions button.save-btn { background: var(--success); }
         .actions button.stop-btn { background: var(--danger); }
+        .actions button.torch-btn { background: var(--warning); }
 
         #reader { width: 100%; max-width: 250px; margin: 0 auto 2px auto; display: none; background: #000; border-radius: 4px; overflow: hidden; }
+
+        .pages-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
 
         .grids-container {
             display: grid;
@@ -88,6 +95,7 @@
             grid-template-rows: repeat(3, 1fr);
             gap: 1px;
             height: calc(100vh - 75px);
+            page-break-after: always;
         }
 
         .single-grid-box {
@@ -105,19 +113,19 @@
             border: 1px solid #000;
             padding: 0px;
             text-align: center;
-            font-size: 5.1px;
+            font-size: 4.8px;
             height: 100%;
             overflow: hidden;
             white-space: nowrap;
             text-overflow: ellipsis;
-            line-height: 1.05;
+            line-height: 1.02;
         }
         .custom-table th {
             background-color: #f1f5f9;
             color: #000;
             font-weight: 900;
-            font-size: 6.2px;
-            height: 15.5px;
+            font-size: 5.8px;
+            height: 14px;
         }
 
         .grid-input {
@@ -126,7 +134,7 @@
             border: none;
             background: transparent;
             text-align: center;
-            font-size: 5.1px;
+            font-size: 4.8px;
             font-family: 'Cairo', sans-serif;
             padding: 0;
             margin: 0;
@@ -136,8 +144,8 @@
             background: #eef2ff;
         }
 
-        .col-num { width: 9%; }
-        .col-imei { width: 45%; }
+        .col-num { width: 8%; }
+        .col-imei { width: 46%; }
         .col-carton { width: 12%; }
         .col-model { width: 18%; }
         .col-color { width: 16%; }
@@ -167,50 +175,44 @@
                 margin: 0 !important;
                 width: 210mm;
                 height: 295mm;
-                overflow: hidden !important;
             }
             .container { 
                 box-shadow: none !important; 
                 padding: 0 !important; 
                 width: 208mm !important; 
-                height: 293mm !important;
                 border: none !important; 
-                display: flex !important; 
-                flex-direction: column !important;
-                justify-content: space-between !important;
+                display: block !important; 
                 margin: 0 auto !important; 
-                page-break-after: avoid !important;
-                page-break-before: avoid !important;
-                page-break-inside: avoid !important;
             }
             .company-card { 
                 border: 1.5px solid #000 !important; 
-                padding: 7px 8px !important; 
-                margin-top: 3px !important;
-                margin-bottom: 4px !important; 
+                padding: 6px 7px !important; 
+                margin-top: 2px !important;
+                margin-bottom: 3px !important; 
             }
             .company-card input { 
                 border: none !important; 
                 background: transparent !important; 
-                font-size: 8.5px !important; 
+                font-size: 8px !important; 
                 padding: 0 !important; 
             }
             .input-group label {
-                font-size: 8px !important;
-                width: 62px !important;
+                font-size: 7.5px !important;
+                width: 60px !important;
             }
             .logo-box { 
                 border: 1.5px solid #000 !important; 
-                width: 44px !important; 
-                height: 44px !important; 
-                font-size: 6.5px !important;
+                width: 40px !important; 
+                height: 40px !important; 
+                font-size: 6px !important;
             }
             .grids-container {
                 display: grid !important;
                 grid-template-columns: repeat(2, 1fr) !important;
                 grid-template-rows: repeat(3, 1fr) !important;
                 gap: 1px !important;
-                height: 255mm !important;
+                height: 252mm !important;
+                page-break-after: always !important;
             }
             .single-grid-box {
                 border: 1px solid #000 !important;
@@ -218,19 +220,19 @@
             }
             .custom-table th, .custom-table td {
                 border: 1px solid #000 !important;
-                font-size: 5px !important;
+                font-size: 4.8px !important;
                 height: auto !important;
                 padding: 0px !important;
-                line-height: 1.08;
+                line-height: 1.02;
             }
             .custom-table th {
-                font-size: 6px !important;
-                height: 14.5px !important;
+                font-size: 5.8px !important;
+                height: 13.5px !important;
             }
             .grid-input {
                 border: none !important;
                 background: transparent !important;
-                font-size: 5px !important;
+                font-size: 4.8px !important;
             }
         }
     </style>
@@ -326,7 +328,8 @@
         <div class="actions">
             <button onclick="saveCompanySettings()" class="no-print save-btn" id="saveCompanyBtn" style="display:none;">💾 حفظ التعديلات</button>
             <button onclick="startRealBarcodeScanner()" class="no-print" id="scanBtn">📷 فتح الكاميرا</button>
-            <button onclick="stopBarcodeScanner()" class="no-print stop-btn" id="stopBtn" style="display:none;">✕ إغلاق الكاميرا</button>
+            <button onclick="toggleFlashlight()" class="no-print torch-btn" id="torchBtn" style="display:none;">🔦 الفلاش</button>
+            <button onclick="stopBarcodeScanner()" class="no-print stop-btn" id="stopBtn" style="display:none;">✕ إغلاق</button>
             
             <label for="galleryBarcode" class="no-print" style="cursor: pointer;">
                 📁 رفع من المعرض
@@ -338,7 +341,7 @@
 
         <div id="reader" class="no-print"></div>
 
-        <div class="grids-container" id="sixGridsContainer"></div>
+        <div class="pages-wrapper" id="pagesWrapperContainer"></div>
     </div>
 
     <div id="qr-file-container" style="display:none;"></div>
@@ -356,6 +359,7 @@
         let scannedSerials = [];
         let tableModels = {}; 
         let tableColors = {}; 
+        let torchOn = false;
 
         window.addEventListener('DOMContentLoaded', async () => {
             try {
@@ -394,25 +398,19 @@
                 document.getElementById('loginUser').value = savedUser;
                 document.getElementById('loginPass').value = savedPass;
                 document.getElementById('rememberMeCheck').checked = true;
-                
-                // تسجيل الدخول تلقائياً عند إعادة التحميل (Refresh) إذا كانت البيانات محفوظة
                 await performAutoLogin(savedUser, savedPass);
             }
-            renderSixGrids();
+            renderAllPages();
         });
 
         async function performAutoLogin(u, p) {
-            const errDiv = document.getElementById('loginError');
             try {
                 const { data, error } = await _supabase.from('subscriptions').select('*').eq('username', u).eq('password', p).single();
                 if (error || !data) return;
 
                 const now = new Date();
                 const expiry = new Date(data.expiry_date);
-
-                if (!data.is_active || expiry < now) {
-                    return;
-                }
+                if (!data.is_active || expiry < now) return;
 
                 currentUser = data;
                 targetManagedUser = data.username;
@@ -432,9 +430,7 @@
                     document.getElementById('logoHintText').style.display = 'none';
                     makeInputsEditable(false);
                 }
-
                 loadCompanySettings(targetManagedUser);
-
             } catch (err) {
                 console.log('Auto login error:', err);
             }
@@ -442,9 +438,7 @@
 
         function triggerPrint() {
             window.focus();
-            setTimeout(() => {
-                window.print();
-            }, 150);
+            setTimeout(() => { window.print(); }, 150);
         }
 
         async function handleLogin() {
@@ -498,9 +492,7 @@
                     document.getElementById('logoHintText').style.display = 'none';
                     makeInputsEditable(false);
                 }
-
                 loadCompanySettings(targetManagedUser);
-
             } catch (err) {
                 errDiv.style.display = 'block';
                 errDiv.innerText = 'خطأ في التحقق من الحساب أو السيرفر!';
@@ -533,20 +525,13 @@
                 data.forEach(sub => {
                     const expiryDate = new Date(sub.expiry_date);
                     expiryDate.setHours(0,0,0,0);
-                    
-                    const diffTime = expiryDate - today;
-                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    const diffDays = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
 
                     let statusBadge = '';
-                    if (!sub.is_active) {
-                        statusBadge = `<span class="badge-expired">🔴 موقوف</span>`;
-                    } else if (diffDays < 0) {
-                        statusBadge = `<span class="badge-expired">⚠️ منتهي (${Math.abs(diffDays)} يوم)</span>`;
-                    } else if (diffDays === 0) {
-                        statusBadge = `<span class="badge-expired">⚠️ ينتهي اليوم</span>`;
-                    } else {
-                        statusBadge = `<span class="badge-active">🟢 باقي ${diffDays} يوم</span>`;
-                    }
+                    if (!sub.is_active) statusBadge = `<span class="badge-expired">🔴 موقوف</span>`;
+                    else if (diffDays < 0) statusBadge = `<span class="badge-expired">⚠️ منتهي (${Math.abs(diffDays)} يوم)</span>`;
+                    else if (diffDays === 0) statusBadge = `<span class="badge-expired">⚠️ ينتهي اليوم</span>`;
+                    else statusBadge = `<span class="badge-active">🟢 باقي ${diffDays} يوم</span>`;
 
                     const row = tbody.insertRow();
                     row.innerHTML = `
@@ -568,19 +553,11 @@
         async function updateUserCredentials(username) {
             const newPass = document.getElementById(`pass_${username}`).value.trim();
             const newExp = document.getElementById(`exp_${username}`).value;
-
-            if(!newPass || !newExp) {
-                alert('الرجاء التأكد من تعبئة كلمة المرور وتاريخ الانتهاء');
-                return;
-            }
+            if(!newPass || !newExp) return alert('الرجاء التأكد من تعبئة كلمة المرور وتاريخ الانتهاء');
 
             const { error } = await _supabase.from('subscriptions').update({ password: newPass, expiry_date: newExp }).eq('username', username);
-            if(error) {
-                alert('خطأ أثناء التحديث: ' + error.message);
-            } else {
-                alert(`تم تحديث بيانات المشترك (${username}) بنجاح!`);
-                loadAllSubscribers();
-            }
+            if(error) alert('خطأ أثناء التحديث: ' + error.message);
+            else { alert(`تم تحديث بيانات المشترك (${username}) بنجاح!`); loadAllSubscribers(); }
         }
 
         function adminSelectUserToManage(username) {
@@ -600,12 +577,7 @@
 
             const { error } = await _supabase.from('subscriptions').insert([{ username, password, expiry_date, role, is_active: true }]);
             if(error) alert('خطأ: المستخدم موجود مسبقاً أو بيانات غير صالحة');
-            else {
-                alert('تمت إضافة المشترك بنجاح');
-                document.getElementById('newUsername').value = '';
-                document.getElementById('newPassword').value = '';
-                loadAllSubscribers();
-            }
+            else { alert('تمت إضافة المشترك بنجاح'); document.getElementById('newUsername').value = ''; document.getElementById('newPassword').value = ''; loadAllSubscribers(); }
         }
 
         async function toggleActive(username, newStatus) {
@@ -623,14 +595,8 @@
         async function loadCompanySettings(username) {
             try {
                 const { data } = await _supabase.from('company_settings').select('*').eq('username', username).maybeSingle();
-                if (data) {
-                    fillCompanyForm(data);
-                } else {
-                    clearCompanyForm();
-                }
-            } catch (e) {
-                clearCompanyForm();
-            }
+                if (data) fillCompanyForm(data); else clearCompanyForm();
+            } catch (e) { clearCompanyForm(); }
         }
 
         function fillCompanyForm(data) {
@@ -659,10 +625,7 @@
         }
 
         async function saveCompanySettings() {
-            if (currentUser && currentUser.role !== 'admin') {
-                alert('عذراً، التعديل متاح للأدمن فقط.');
-                return;
-            }
+            if (currentUser && currentUser.role !== 'admin') return alert('عذراً، التعديل متاح للأدمن فقط.');
 
             const payload = {
                 username: targetManagedUser,
@@ -676,15 +639,9 @@
 
             try {
                 const { error } = await _supabase.from('company_settings').upsert(payload, { onConflict: 'username' });
-
-                if(error) {
-                    alert('خطأ في الحفظ السحابي: ' + error.message);
-                } else {
-                    alert(`تم حفظ وتحديث بيانات منشأة المشترك (${targetManagedUser}) بنجاح تام!`);
-                }
-            } catch (err) {
-                alert('حدث خطأ أثناء الاتصال بقاعدة البيانات.');
-            }
+                if(error) alert('خطأ في الحفظ السحابي: ' + error.message);
+                else alert(`تم حفظ وتحديث بيانات منشأة المشترك (${targetManagedUser}) بنجاح تام!`);
+            } catch (err) { alert('حدث خطأ أثناء الاتصال بقاعدة البيانات.'); }
         }
 
         function triggerLogoUpload() {
@@ -710,12 +667,13 @@
         function startRealBarcodeScanner() {
             document.getElementById('reader').style.display = 'block';
             document.getElementById('scanBtn').style.display = 'none';
+            document.getElementById('torchBtn').style.display = 'inline-block';
             document.getElementById('stopBtn').style.display = 'inline-block';
 
             html5QrCode = new Html5Qrcode("reader");
             
             const config = { 
-                fps: 20, 
+                fps: 25, 
                 qrbox: { width: 280, height: 180 },
                 aspectRatio: 1.0,
                 formatsToSupport: [
@@ -724,8 +682,12 @@
                     Html5QrcodeSupportedFormats.PDF_417,
                     Html5QrcodeSupportedFormats.CODE_128,
                     Html5QrcodeSupportedFormats.CODE_39,
+                    Html5QrcodeSupportedFormats.CODE_93,
                     Html5QrcodeSupportedFormats.EAN_13,
-                    Html5QrcodeSupportedFormats.UPC_A
+                    Html5QrcodeSupportedFormats.EAN_8,
+                    Html5QrcodeSupportedFormats.UPC_A,
+                    Html5QrcodeSupportedFormats.UPC_E,
+                    Html5QrcodeSupportedFormats.ITF
                 ]
             };
 
@@ -743,6 +705,22 @@
             });
         }
 
+        async function toggleFlashlight() {
+            if (!html5QrCode) return;
+            try {
+                torchOn = !torchOn;
+                await html5QrCode.applyVideoConstraints({
+                    advanced: [{ torch: torchOn }]
+                });
+                const torchBtn = document.getElementById('torchBtn');
+                torchBtn.style.background = torchOn ? 'var(--success)' : 'var(--warning)';
+                torchBtn.innerText = torchOn ? '💡 إطفاء الفلاش' : '🔦 الفلاش';
+            } catch (e) {
+                alert("خاصية الفلاش غير مدعومة في هذا الجهاز أو المتصفح");
+                torchOn = false;
+            }
+        }
+
         function stopBarcodeScanner() {
             if (html5QrCode) {
                 html5QrCode.stop().then(() => { html5QrCode.clear(); resetUI(); }).catch(() => resetUI());
@@ -752,7 +730,9 @@
         function resetUI() {
             document.getElementById('reader').style.display = 'none';
             document.getElementById('scanBtn').style.display = 'inline-block';
+            document.getElementById('torchBtn').style.display = 'none';
             document.getElementById('stopBtn').style.display = 'none';
+            torchOn = false;
         }
 
         async function readComplexQrFromFile(event) {
@@ -773,11 +753,11 @@
             if (!codeText) return;
 
             let rawItems = codeText.split(/\r?\n|,|\t|;|\s+/).map(item => item.trim()).filter(item => item !== "");
-            
             let validItems = [];
+            
             rawItems.forEach(item => {
                 let cleanItem = item.replace(/[^a-zA-Z0-9]/g, '');
-                if (cleanItem.length >= 5) {
+                if (cleanItem.length >= 3) {
                     validItems.push(cleanItem);
                 }
             });
@@ -790,7 +770,11 @@
                 scannedSerials.push(item);
             });
 
-            renderSixGrids();
+            renderAllPages();
+        }
+
+        function updateSerialVal(globalIndex, val) {
+            scannedSerials[globalIndex] = val;
         }
 
         function updateModelVal(globalIndex, val) {
@@ -801,72 +785,70 @@
             tableColors[globalIndex] = val;
         }
 
-        function renderSixGrids() {
-            const container = document.getElementById('sixGridsContainer');
-            container.innerHTML = '';
+        function renderAllPages() {
+            const wrapper = document.getElementById('pagesWrapperContainer');
+            wrapper.innerHTML = '';
 
-            for (let gridIdx = 1; gridIdx <= 6; gridIdx++) {
-                const boxDiv = document.createElement('div');
-                boxDiv.className = 'single-grid-box';
+            // كل صفحة تحتوي على 6 جداول، وكل جدول يحتوي على 21 صفاً (إجمالي الصفحة = 126 سيريال)
+            const itemsPerPage = 126;
+            const totalPages = Math.max(1, Math.ceil(scannedSerials.length / itemsPerPage));
 
-                let tableHTML = `
-                    <style>
-                        .custom-table th, .custom-table td {
-                            border: 1px solid #000;
-                            padding: 0px;
-                            text-align: center;
-                            font-size: 5.1px;
-                            height: 100%;
-                            overflow: hidden;
-                            white-space: nowrap;
-                            text-overflow: ellipsis;
-                            line-height: 1.05;
+            for (let pageIdx = 0; pageIdx < totalPages; pageIdx++) {
+                const gridContainer = document.createElement('div');
+                gridContainer.className = 'grids-container';
+
+                for (let gridIdx = 1; gridIdx <= 6; gridIdx++) {
+                    const boxDiv = document.createElement('div');
+                    boxDiv.className = 'single-grid-box';
+
+                    let tableHTML = `
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th class="col-num">الرقم</th>
+                                    <th class="col-imei">IMEI 1</th>
+                                    <th class="col-carton">رقم</th>
+                                    <th class="col-model">الموديل</th>
+                                    <th class="col-color">اللون</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+
+                    for (let rowIdx = 1; rowIdx <= 21; rowIdx++) {
+                        const globalIndex = (pageIdx * itemsPerPage) + ((gridIdx - 1) * 21) + (rowIdx - 1);
+                        const serialValue = scannedSerials[globalIndex] || '';
+                        const modelValue = tableModels[globalIndex] || '';
+                        const colorValue = tableColors[globalIndex] || '';
+
+                        if (rowIdx === 1) {
+                            tableHTML += `
+                                <tr>
+                                    <td>${rowIdx}</td>
+                                    <td style="text-align:right; padding:0;"><input type="text" class="grid-input" value="${serialValue}" oninput="updateSerialVal(${globalIndex}, this.value)" style="text-align:right; padding-right:1px;"></td>
+                                    <td rowspan="21" style="vertical-align: middle; text-align: center; font-weight: 900; font-size: 8px;">${gridIdx}</td>
+                                    <td><input type="text" class="grid-input" value="${modelValue}" oninput="updateModelVal(${globalIndex}, this.value)"></td>
+                                    <td><input type="text" class="grid-input" value="${colorValue}" oninput="updateColorVal(${globalIndex}, this.value)"></td>
+                                </tr>
+                            `;
+                        } else {
+                            tableHTML += `
+                                <tr>
+                                    <td>${rowIdx}</td>
+                                    <td style="text-align:right; padding:0;"><input type="text" class="grid-input" value="${serialValue}" oninput="updateSerialVal(${globalIndex}, this.value)" style="text-align:right; padding-right:1px;"></td>
+                                    <td><input type="text" class="grid-input" value="${modelValue}" oninput="updateModelVal(${globalIndex}, this.value)"></td>
+                                    <td><input type="text" class="grid-input" value="${colorValue}" oninput="updateColorVal(${globalIndex}, this.value)"></td>
+                                </tr>
+                            `;
                         }
-                    </style>
-                    <table class="custom-table">
-                        <thead>
-                            <tr>
-                                <th class="col-num">الرقم</th>
-                                <th class="col-imei">IMEI 1</th>
-                                <th class="col-carton">رقم</th>
-                                <th class="col-model">الموديل</th>
-                                <th class="col-color">اللون</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-
-                for (let rowIdx = 1; rowIdx <= 20; rowIdx++) {
-                    const serialGlobalIndex = (gridIdx - 1) * 20 + (rowIdx - 1);
-                    const serialValue = scannedSerials[serialGlobalIndex] || '';
-                    const modelValue = tableModels[serialGlobalIndex] || '';
-                    const colorValue = tableColors[serialGlobalIndex] || '';
-
-                    if (rowIdx === 1) {
-                        tableHTML += `
-                            <tr>
-                                <td>${rowIdx}</td>
-                                <td style="text-align:right; padding-right:1px;">${serialValue}</td>
-                                <td rowspan="20" style="vertical-align: middle; text-align: center; font-weight: 900; font-size: 8.5px;">${gridIdx}</td>
-                                <td><input type="text" class="grid-input" value="${modelValue}" oninput="updateModelVal(${serialGlobalIndex}, this.value)"></td>
-                                <td><input type="text" class="grid-input" value="${colorValue}" oninput="updateColorVal(${serialGlobalIndex}, this.value)"></td>
-                            </tr>
-                        `;
-                    } else {
-                        tableHTML += `
-                            <tr>
-                                <td>${rowIdx}</td>
-                                <td style="text-align:right; padding-right:1px;">${serialValue}</td>
-                                <td><input type="text" class="grid-input" value="${modelValue}" oninput="updateModelVal(${serialGlobalIndex}, this.value)"></td>
-                                <td><input type="text" class="grid-input" value="${colorValue}" oninput="updateColorVal(${serialGlobalIndex}, this.value)"></td>
-                            </tr>
-                        `;
                     }
+
+                    tableHTML += `</tbody></table>`;
+                    boxDiv.innerHTML = tableHTML;
+                    gridContainer.appendChild(boxDiv);
                 }
 
-                tableHTML += `</tbody></table>`;
-                boxDiv.innerHTML = tableHTML;
-                container.appendChild(boxDiv);
+                wrapper.appendChild(gridContainer);
             }
         }
     </script>
