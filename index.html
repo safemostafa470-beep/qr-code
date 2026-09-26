@@ -727,9 +727,14 @@
             html5QrCode = new Html5Qrcode("reader");
             
             const config = { 
-                fps: 25, 
-                qrbox: { width: 280, height: 180 },
-                aspectRatio: 1.0,
+                fps: 10,
+                qrbox: false,
+                aspectRatio: 1.7777778,
+                videoConstraints: {
+                    facingMode: { exact: "environment" },
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                },
                 formatsToSupport: [
                     Html5QrcodeSupportedFormats.QR_CODE,
                     Html5QrcodeSupportedFormats.DATA_MATRIX,
@@ -746,7 +751,7 @@
             };
 
             html5QrCode.start(
-                { facingMode: "environment" }, 
+                { facingMode: { exact: "environment" } }, 
                 config,
                 (decodedText) => {
                     addSerialToTable(decodedText);
