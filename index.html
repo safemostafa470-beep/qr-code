@@ -120,7 +120,7 @@
 
         .grid-input {
             width: 100%; height: 100%; border: none; background: transparent;
-            text-align: center; font-size: 5px; font-family: 'Cairo', sans-serif; padding: 0; margin: 0; outline: none;
+            text-align: center; font-size: 6.5px; font-weight: 700; font-family: 'Cairo', sans-serif; padding: 0; margin: 0; outline: none;
         }
         .grid-input:focus { background: #eef2ff; }
 
@@ -160,7 +160,7 @@
             .custom-table th, .custom-table td { border: 1px solid #000 !important; font-size: 4.5px !important; padding: 0px !important; height: auto !important; }
             .custom-table td:first-child { font-size: 5.5px !important; font-weight: 900 !important; }
             .custom-table th { font-size: 4.5px !important; height: 8.5px !important; }
-            .grid-input { border: none !important; background: transparent !important; font-size: 4.5px !important; }
+            .grid-input { border: none !important; background: transparent !important; font-size: 6px !important; font-weight: 700 !important; text-align: center !important; }
         }
     </style>
 </head>
@@ -174,7 +174,7 @@
             <label class="remember-me">
                 <input type="checkbox" id="rememberMeCheck" checked> حفظ بيانات الدخول
             </label>
-            <button onclick="handleLogin()">تسجيل الدخول</button>
+            <button type="button" onclick="handleLogin()">تسجيل الدخول</button>
             <div id="loginError">بيانات الدخول خاطئة أو الاشتراك منتهي!</div>
         </div>
     </div>
@@ -229,15 +229,15 @@
                 <div class="input-group" style="margin-bottom: 4px;">
                     <label style="width: 100px;">حالة شاشة الدخول:</label>
                     <select id="loginStatusSelect">
-                        <option value="active">إظهار اللوجن (مفعل)</option>
-                        <option value="bypassed">إخفاء اللوجن (دخول مباشر)</option>
+                        <option value="active">إظهار اللوجن للمستخدمين</option>
+                        <option value="bypassed">إخفاء اللوجن للمستخدمين (دخول مباشر)</option>
                     </select>
                 </div>
                 <div class="input-group" style="margin-bottom: 6px;">
                     <label style="width: 100px;">وضع الصيانة:</label>
                     <select id="maintenanceSelect">
-                        <option value="off">إيقاف وضع الصيانة (الموقع يعمل)</option>
-                        <option value="on">تفعيل وضع الصيانة (إغلاق الموقع)</option>
+                        <option value="off">إيقاف وضع الصيانة</option>
+                        <option value="on">تفعيل وضع الصيانة للمستخدمين</option>
                     </select>
                 </div>
                 <button class="btn-add" onclick="saveAppSettings()" style="width: 100%;">💾 حفظ إعدادات الموقع</button>
@@ -364,7 +364,6 @@
             let loginStatusSetting = 'active';
             let maintenanceSetting = 'off';
 
-            // 1. جلب إعدادات السيرفر أولاً وبشكل مؤكد
             try {
                 const { data: settingsData, error } = await _supabase.from('app_settings').select('*');
                 if (!error && settingsData) {
@@ -389,33 +388,34 @@
                 }
             } catch (e) { console.log(e); }
 
-            // 2. فحص وضع الصيانة بدقة
-            if (maintenanceSetting === 'on') {
-                const savedUser = localStorage.getItem('saved_username');
-                let isCurrentAdmin = false;
-                if (savedUser) {
-                    try {
-                        const { data: checkAdmin } = await _supabase.from('subscriptions').select('role').eq('username', savedUser).single();
-                        if (checkAdmin && checkAdmin.role === 'admin') isCurrentAdmin = true;
-                    } catch(err) {}
-                }
-
-                if (!isCurrentAdmin) {
-                    document.getElementById('loginOverlay').innerHTML = `
-                        <div class="login-card" style="text-align:center;">
-                            <h3 style="color:var(--danger); font-size:18px;">⚠️ الموقع تحت الصيانة حالياً</h3>
-                            <p style="font-size:12px; color:var(--text-secondary); margin-top:10px;">نعتذر عن الإيقاف المؤقت، يرجى العودة لاحقاً.</p>
-                        </div>
-                    `;
-                    document.getElementById('loginOverlay').style.display = 'flex';
-                    return;
-                }
+            // التحقق من حساب المستخدم المخزن مسبقاً لمعرفة هل هو أدمن أم مستخدم عادي
+            const savedUser = localStorage.getItem('saved_username');
+            let isCurrentAdmin = false;
+            if (savedUser) {
+                try {
+                    const { data: checkAdmin } = await _supabase.from('subscriptions').select('*').eq('username', savedUser).maybeSingle();
+                    if (checkAdmin && checkAdmin.role === 'admin') {
+                        isCurrentAdmin = true;
+                    }
+                } catch(err) {}
             }
 
-            // 3. فحص إخفاء شاشة الدخول (دخول مباشر) - شريطة عدم تسجيل الخروج يدوياً
-            if (loginStatusSetting === 'bypassed' && !localStorage.getItem('manual_logout')) {
+            // وضع الصيانة يطبق فقط على المستخدمين العاديين (الأدمن مستثنى تماماً)
+            if (maintenanceSetting === 'on' && !isCurrentAdmin) {
+                document.getElementById('loginOverlay').innerHTML = `
+                    <div class="login-card" style="text-align:center;">
+                        <h3 style="color:var(--danger); font-size:18px;">⚠ الموقع تحت الصيانة حالياً</h3>
+                        <p style="font-size:12px; color:var(--text-secondary); margin-top:10px;">نعتذر عن الإيقاف المؤقت، يرجى العودة لاحقاً.</p>
+                    </div>
+                `;
+                document.getElementById('loginOverlay').style.display = 'flex';
+                return;
+            }
+
+            // إخفاء اللوجن (التخطي) يطبق فقط على المستخدمين العاديين أو عند عدم وجود تسجيل خروج يدوي
+            if (loginStatusSetting === 'bypassed' && !localStorage.getItem('manual_logout') && !isCurrentAdmin) {
                 try {
-                    const { data: defaultUser } = await _supabase.from('subscriptions').select('*').eq('role', 'admin').eq('is_active', true).limit(1).maybeSingle();
+                    const { data: defaultUser } = await _supabase.from('subscriptions').select('*').eq('role', 'user').eq('is_active', true).limit(1).maybeSingle();
                     if (defaultUser) {
                         currentUser = defaultUser;
                         targetManagedUser = defaultUser.username;
@@ -429,13 +429,13 @@
                 } catch(err) {}
             }
 
-            // 4. التحقق عبر التخزين المحلي للمستخدمين العاديين أو الأدمن
-            const savedUser = localStorage.getItem('saved_username');
-            const savedPass = localStorage.getItem('saved_password');
-            if (savedUser && savedPass) {
-                document.getElementById('loginUser').value = savedUser;
-                document.getElementById('loginPass').value = savedPass;
-                await performAutoLogin(savedUser, savedPass);
+            if (savedUser) {
+                const savedPass = localStorage.getItem('saved_password');
+                if (savedPass) {
+                    document.getElementById('loginUser').value = savedUser;
+                    document.getElementById('loginPass').value = savedPass;
+                    await performAutoLogin(savedUser, savedPass);
+                }
             }
             
             renderAllPages();
@@ -465,7 +465,7 @@
 
         async function performAutoLogin(u, p) {
             try {
-                const { data, error } = await _supabase.from('subscriptions').select('*').eq('username', u).eq('password', p).single();
+                const { data, error } = await _supabase.from('subscriptions').select('*').eq('username', u).eq('password', p).maybeSingle();
                 if (error || !data || !data.is_active || new Date(data.expiry_date) < new Date()) return;
                 currentUser = data;
                 targetManagedUser = data.username;
@@ -474,6 +474,7 @@
                 document.getElementById('appContainer').style.display = 'block';
                 setupUserInterface();
                 await loadCompanySettings(targetManagedUser);
+                renderAllPages();
             } catch (err) { console.log(err); }
         }
 
@@ -495,8 +496,12 @@
             }
 
             try {
-                const { data, error } = await _supabase.from('subscriptions').select('*').eq('username', u).eq('password', p).single();
-                if (error || !data) throw new Error();
+                const { data, error } = await _supabase.from('subscriptions').select('*').eq('username', u).eq('password', p).maybeSingle();
+                if (error || !data) {
+                    errDiv.style.display = 'block';
+                    errDiv.innerText = 'اسم المستخدم أو كلمة المرور غير صحيحة!';
+                    return;
+                }
 
                 if (!data.is_active || new Date(data.expiry_date) < new Date()) {
                     errDiv.style.display = 'block';
@@ -519,9 +524,10 @@
                 document.getElementById('appContainer').style.display = 'block';
                 setupUserInterface();
                 await loadCompanySettings(targetManagedUser);
+                renderAllPages();
             } catch (err) {
                 errDiv.style.display = 'block';
-                errDiv.innerText = 'خطأ في التحقق من الحساب أو السيرفر!';
+                errDiv.innerText = 'حدث خطأ أثناء الاتصال بقاعدة البيانات!';
             }
         }
 
@@ -619,7 +625,7 @@
                     return;
                 }
             }
-            alert('تم حفظ إعدادات الموقع بنجاح!');
+            alert('تم حفظ وتطبيق إعدادات الموقع بنجاح!');
             location.reload();
         }
 
@@ -914,7 +920,7 @@
                             tableHTML += `
                                 <tr>
                                     <td>${rowIdx}</td>
-                                    <td style="text-align:right; padding:0;"><input type="text" class="grid-input" value="${serialValue}" oninput="updateSerialVal(${globalIndex}, this.value)" style="text-align:right; padding-right:1px;"></td>
+                                    <td style="text-align:center; padding:0; vertical-align:middle;"><input type="text" class="grid-input" value="${serialValue}" oninput="updateSerialVal(${globalIndex}, this.value)"></td>
                                     <td rowspan="21" style="vertical-align: middle; text-align: center; font-weight: 900; font-size: 6.5px;">${absoluteGridNumber}</td>
                                     <td><input type="text" class="grid-input" value="${modelValue}" oninput="updateModelVal(${globalIndex}, this.value)"></td>
                                     <td><input type="text" class="grid-input" value="${colorValue}" oninput="updateColorVal(${globalIndex}, this.value)"></td>
@@ -924,7 +930,7 @@
                             tableHTML += `
                                 <tr>
                                     <td>${rowIdx}</td>
-                                    <td style="text-align:right; padding:0;"><input type="text" class="grid-input" value="${serialValue}" oninput="updateSerialVal(${globalIndex}, this.value)" style="text-align:right; padding-right:1px;"></td>
+                                    <td style="text-align:center; padding:0; vertical-align:middle;"><input type="text" class="grid-input" value="${serialValue}" oninput="updateSerialVal(${globalIndex}, this.value)"></td>
                                     <td><input type="text" class="grid-input" value="${modelValue}" oninput="updateModelVal(${globalIndex}, this.value)"></td>
                                     <td><input type="text" class="grid-input" value="${colorValue}" oninput="updateColorVal(${globalIndex}, this.value)"></td>
                                 </tr>
@@ -935,7 +941,7 @@
                     boxDiv.innerHTML = tableHTML;
                     gridContainer.appendChild(boxDiv);
                 }
-                pageSection.appendChild(gridContainer);
+                pageSection.pagesWrapper ? '' : pageSection.appendChild(gridContainer);
                 wrapper.appendChild(pageSection);
             }
         }
