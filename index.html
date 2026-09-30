@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام إدارة البيانات والباركود المحمي</title>
+    <title>نظام إدارة البيانات والباركود الذكي</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -56,13 +55,25 @@
         .top-bar h2 { font-size: 11px; color: var(--primary); margin: 0; font-weight: 900; }
         .logout-btn { background: #ffe4e6; color: var(--danger); border: none; padding: 2px 5px; border-radius: 4px; font-size: 8px; font-weight: 700; cursor: pointer; }
 
-        #adminPanel { display: none; background: #f8fafc; padding: 3px; border-radius: 4px; border: 1px solid #cbd5e1; margin-bottom: 2px; }
-        #adminPanel h3 { margin-top: 0; color: var(--primary); font-size: 10px; font-weight: 800; margin-bottom: 3px; }
-        .admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 2px; margin-bottom: 3px; }
-        .admin-grid input, .admin-grid select { padding: 2px; border: 1px solid #cbd5e1; border-radius: 3px; font-size: 8px; background: #fff; text-align: center; }
-        .btn-add { background: var(--success); color: white; border: none; border-radius: 3px; cursor: pointer; font-weight: 700; padding: 2px; }
+        #adminPanel { display: none; background: #f8fafc; padding: 4px; border-radius: 6px; border: 1px solid #cbd5e1; margin-bottom: 4px; }
+        #adminPanel h3 { margin-top: 0; color: var(--primary); font-size: 10px; font-weight: 800; margin-bottom: 4px; }
+        
+        .admin-nav-tabs { display: flex; gap: 4px; margin-bottom: 6px; }
+        .admin-tab-btn { flex: 1; padding: 4px; background: #e2e8f0; border: none; border-radius: 4px; font-size: 8px; font-weight: 700; cursor: pointer; color: var(--text-secondary); text-align: center; }
+        .admin-tab-btn.active { background: var(--primary); color: #fff; }
 
-        /* تعديل مقاسات بطاقة المنشأة لتكبر خانة الشعار وتقل المساحة الفاضية */
+        .admin-section { display: none; background: #fff; padding: 6px; border-radius: 6px; border: 1px solid #e2e8f0; margin-bottom: 4px; }
+        .admin-section.active { display: block; }
+
+        .admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 3px; margin-bottom: 4px; }
+        .admin-grid input, .admin-grid select { 
+            padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 8px; 
+            background: #ffffff; color: var(--text-main); text-align: center; width: 100%;
+        }
+        .admin-grid select option { background: #ffffff; color: var(--text-main); padding: 6px; }
+
+        .btn-add { background: var(--success); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 700; padding: 4px; font-size: 8px; }
+
         .company-card { background: #ffffff; border: 1.5px solid #000; padding: 3px 6px; border-radius: 4px; margin-bottom: 2px; }
         .no-dup-table { width: 100%; border-collapse: collapse; }
         .no-dup-table td { padding: 0px 4px; border: none; vertical-align: middle; }
@@ -73,7 +84,7 @@
 
         .input-group { display: flex; align-items: center; gap: 4px; width: 100%; margin-bottom: 1px; }
         .input-group label { font-size: 7px; font-weight: 700; color: var(--text-secondary); width: 55px; flex-shrink: 0; text-align: left; }
-        .company-card input { width: 100%; padding: 1px 3px; border: 1px solid #cbd5e1; border-radius: 3px; font-size: 8px; background: #fff; font-weight: 700; color: var(--text-main); text-align: right; }
+        .company-card input, .company-card select { width: 100%; padding: 1px 3px; border: 1px solid #cbd5e1; border-radius: 3px; font-size: 8px; background: #fff; font-weight: 700; color: var(--text-main); text-align: right; }
         .company-card input:read-only { background: #f8fafc; color: #475569; border-color: #e2e8f0; }
 
         .actions { display: flex; flex-wrap: wrap; gap: 2px; margin-bottom: 2px; justify-content: center; }
@@ -82,24 +93,13 @@
         .actions button.stop-btn { background: var(--danger); }
         .actions button.torch-btn { background: var(--warning); }
 
-        #reader { width: 100%; max-width: 250px; margin: 0 auto 2px auto; display: none; background: #000; border-radius: 4px; overflow: hidden; }
+        #scannerContainer { width: 100%; max-width: 260px; margin: 5px auto; display: none; background: #000; border-radius: 8px; overflow: hidden; position: relative; text-align: center; border: 2px solid var(--primary); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        #videoElement { width: 100%; height: 160px; object-fit: cover; display: block; }
+        #canvasElement { display: none; }
 
-        .pages-wrapper {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .print-page-section {
-            display: flex;
-            flex-direction: column;
-            background: #fff;
-            margin-bottom: 2px;
-        }
-
-        .print-company-card {
-            display: none;
-        }
+        .pages-wrapper { display: flex; flex-direction: column; gap: 2px; }
+        .print-page-section { display: flex; flex-direction: column; background: #fff; margin-bottom: 2px; }
+        .print-company-card { display: none; }
 
         .grids-container {
             display: grid;
@@ -108,50 +108,19 @@
             gap: 1.5px;
         }
 
-        .single-grid-box {
-            border: 1px solid #000;
-            background: #fff;
-            padding: 0.5px;
-            display: flex;
-            flex-direction: column;
-        }
+        .single-grid-box { border: 1px solid #000; background: #fff; padding: 0.5px; display: flex; flex-direction: column; }
 
         .custom-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         .custom-table th, .custom-table td {
-            border: 1px solid #000;
-            padding: 0px;
-            text-align: center;
-            font-size: 5px;
-            overflow: hidden;
-            white-space: nowrap;
-            text-overflow: ellipsis;
-            line-height: 1.0;
+            border: 1px solid #000; padding: 0px; text-align: center; font-size: 5px;
+            overflow: hidden; white-space: nowrap; text-overflow: ellipsis; line-height: 1.0;
         }
-        .custom-table td:first-child {
-            font-size: 6.5px !important;
-            font-weight: 900 !important;
-            color: #000 !important;
-            background-color: #f8fafc;
-        }
-        .custom-table th {
-            background-color: #f1f5f9;
-            color: #000;
-            font-weight: 900;
-            font-size: 5.5px;
-            height: 10px;
-        }
+        .custom-table td:first-child { font-size: 6.5px !important; font-weight: 900 !important; color: #000 !important; background-color: #f8fafc; }
+        .custom-table th { background-color: #f1f5f9; color: #000; font-weight: 900; font-size: 5.5px; height: 10px; }
 
         .grid-input {
-            width: 100%;
-            height: 100%;
-            border: none;
-            background: transparent;
-            text-align: center;
-            font-size: 5px;
-            font-family: 'Cairo', sans-serif;
-            padding: 0;
-            margin: 0;
-            outline: none;
+            width: 100%; height: 100%; border: none; background: transparent;
+            text-align: center; font-size: 5px; font-family: 'Cairo', sans-serif; padding: 0; margin: 0; outline: none;
         }
         .grid-input:focus { background: #eef2ff; }
 
@@ -173,109 +142,25 @@
         .btn-delete { background: var(--danger); color: white; }
 
         @media print {
-            @page {
-                size: A4 portrait;
-                margin: 2mm;
-            }
-            .no-print, .actions, #reader, .top-bar, #adminPanel, .logo-hint, .table-responsive, #mainCompanyCard { 
-                display: none !important; 
-            }
-            .print-company-card {
-                display: block !important;
-            }
-            body, html { 
-                background: #fff !important; 
-                padding: 0 !important; 
-                margin: 0 !important;
-                width: 210mm;
-                height: 297mm;
-            }
-            .container { 
-                box-shadow: none !important; 
-                padding: 0 !important; 
-                width: 100% !important; 
-                border: none !important; 
-                display: block !important; 
-                margin: 0 !important; 
-            }
-            .company-card { 
-                border: 1px solid #000 !important; 
-                padding: 2px 4px !important; 
-                margin-top: 0 !important;
-                margin-bottom: 1px !important; 
-            }
-            .company-card input { 
-                border: none !important; 
-                background: transparent !important; 
-                font-size: 6.5px !important; 
-                padding: 0 !important; 
-            }
-            .input-group label {
-                font-size: 6px !important;
-                width: 48px !important;
-                text-align: right !important;
-            }
-            .logo-box { 
-                border: 1px solid #000 !important; 
-                width: 42px !important; 
-                height: 42px !important; 
-                font-size: 4px !important;
-            }
-            .pages-wrapper {
-                display: block !important;
-            }
-            /* منع إنشاء صفحات فارغة نهائياً بالتحكم الدقيق في ارتفاع كل صفحة */
-            .print-page-section {
-                height: 288mm !important;
-                max-height: 288mm !important;
-                display: flex !important;
-                flex-direction: column !important;
-                page-break-after: always !important;
-                page-break-inside: avoid !important;
-                box-sizing: border-box !important;
-                margin: 0 !important;
-                padding: 0 !important;
-            }
-            .print-page-section:last-child {
-                page-break-after: avoid !important;
-            }
-            .grids-container {
-                display: grid !important;
-                grid-template-columns: repeat(2, 1fr) !important;
-                grid-template-rows: repeat(3, 1fr) !important;
-                gap: 1.5px !important;
-                width: 100% !important;
-                flex-grow: 1 !important;
-            }
-            .single-grid-box {
-                border: 1px solid #000 !important;
-                height: 100% !important;
-                padding: 0px !important;
-                display: flex !important;
-                flex-direction: column !important;
-            }
-            .custom-table {
-                height: 100% !important;
-            }
-            .custom-table th, .custom-table td {
-                border: 1px solid #000 !important;
-                font-size: 4.5px !important;
-                padding: 0px !important;
-                height: auto !important;
-            }
-            .custom-table td:first-child {
-                font-size: 5.5px !important;
-                font-weight: 900 !important;
-            }
-            .custom-table th {
-                font-size: 4.5px !important;
-                height: 8.5px !important;
-            }
-            .grid-input {
-                border: none !important;
-                background: transparent !important;
-                font-size: 4.5px !important;
-            }
+            @page { size: A4 portrait; margin: 2mm; }
+            .no-print, .actions, #scannerContainer, .top-bar, #adminPanel, .logo-hint, .table-responsive, #mainCompanyCard { display: none !important; }
+            .print-company-card { display: block !important; }
+            body, html { background: #fff !important; padding: 0 !important; margin: 0 !important; width: 210mm; height: 297mm; }
+            .container { box-shadow: none !important; padding: 0 !important; width: 100% !important; border: none !important; display: block !important; margin: 0 !important; }
+            .company-card { border: 1px solid #000 !important; padding: 2px 4px !important; margin-top: 0 !important; margin-bottom: 1px !important; }
+            .company-card input { border: none !important; background: transparent !important; font-size: 6.5px !important; padding: 0 !important; }
+            .input-group label { font-size: 6px !important; width: 48px !important; text-align: right !important; }
+            .logo-box { border: 1px solid #000 !important; width: 42px !important; height: 42px !important; font-size: 4px !important; }
+            .pages-wrapper { display: block !important; }
+            .print-page-section { height: 288mm !important; max-height: 288mm !important; display: flex !important; flex-direction: column !important; page-break-after: always !important; page-break-inside: avoid !important; box-sizing: border-box !important; margin: 0 !important; padding: 0 !important; }
+            .print-page-section:last-child { page-break-after: avoid !important; }
+            .grids-container { display: grid !important; grid-template-columns: repeat(2, 1fr) !important; grid-template-rows: repeat(3, 1fr) !important; gap: 1.5px !important; width: 100% !important; flex-grow: 1 !important; }
+            .single-grid-box { border: 1px solid #000 !important; height: 100% !important; padding: 0px !important; display: flex !important; flex-direction: column !important; }
+            .custom-table { height: 100% !important; }
+            .custom-table th, .custom-table td { border: 1px solid #000 !important; font-size: 4.5px !important; padding: 0px !important; height: auto !important; }
+            .custom-table td:first-child { font-size: 5.5px !important; font-weight: 900 !important; }
+            .custom-table th { font-size: 4.5px !important; height: 8.5px !important; }
+            .grid-input { border: none !important; background: transparent !important; font-size: 4.5px !important; }
         }
     </style>
 </head>
@@ -302,34 +187,63 @@
 
         <div id="adminPanel">
             <h3>👑 لوحة تحكم الأدمن المركزية</h3>
-            <div class="admin-grid">
-                <input type="text" id="newUsername" placeholder="اسم المستخدم الجديد">
-                <input type="text" id="newPassword" placeholder="كلمة المرور">
-                <input type="date" id="newExpiry">
-                <select id="newRole">
-                    <option value="user">مستخدم عادي</option>
-                    <option value="admin">مدير (Admin)</option>
-                </select>
-                <button class="btn-add" onclick="addSubscriber()">+ إضافة مشترك</button>
+            
+            <div class="admin-nav-tabs">
+                <button class="admin-tab-btn active" onclick="switchAdminTab(event, 'subscribersTab')">👥 إدارة المستخدمين</button>
+                <button class="admin-tab-btn" onclick="switchAdminTab(event, 'settingsTab')">⚙️ إعدادات الموقع</button>
             </div>
 
-            <div class="table-responsive">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>المستخدم</th>
-                            <th>كلمة المرور</th>
-                            <th>الانتهاء والصلاحية</th>
-                            <th>الحالة والأيام</th>
-                            <th>الإدارة</th>
-                        </tr>
-                    </thead>
-                    <tbody id="subscribersTableBody"></tbody>
-                </table>
+            <div id="subscribersTab" class="admin-section active">
+                <div class="admin-grid">
+                    <input type="text" id="newUsername" placeholder="اسم المستخدم الجديد">
+                    <input type="text" id="newPassword" placeholder="كلمة المرور">
+                    <input type="date" id="newExpiry">
+                    <select id="newRole">
+                        <option value="user">مستخدم عادي</option>
+                        <option value="admin">مدير (Admin)</option>
+                    </select>
+                    <button class="btn-add" onclick="addSubscriber()">+ إضافة مشترك</button>
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>المستخدم</th>
+                                <th>كلمة المرور</th>
+                                <th>الانتهاء والصلاحية</th>
+                                <th>الحالة والأيام</th>
+                                <th>الإدارة</th>
+                            </tr>
+                        </thead>
+                        <tbody id="subscribersTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="settingsTab" class="admin-section">
+                <div class="input-group" style="margin-bottom: 4px;">
+                    <label style="width: 100px;">عنوان شاشة اللوجن:</label>
+                    <input type="text" id="loginTitleInput" placeholder="عنوان شاشة الدخول">
+                </div>
+                <div class="input-group" style="margin-bottom: 4px;">
+                    <label style="width: 100px;">حالة شاشة الدخول:</label>
+                    <select id="loginStatusSelect">
+                        <option value="active">إظهار اللوجن (مفعل)</option>
+                        <option value="bypassed">إخفاء اللوجن (دخول مباشر)</option>
+                    </select>
+                </div>
+                <div class="input-group" style="margin-bottom: 6px;">
+                    <label style="width: 100px;">وضع الصيانة:</label>
+                    <select id="maintenanceSelect">
+                        <option value="off">إيقاف وضع الصيانة (الموقع يعمل)</option>
+                        <option value="on">تفعيل وضع الصيانة (إغلاق الموقع)</option>
+                    </select>
+                </div>
+                <button class="btn-add" onclick="saveAppSettings()" style="width: 100%;">💾 حفظ إعدادات الموقع</button>
             </div>
         </div>
 
-        <!-- بطاقة المنشأة الأساسية -->
         <div class="company-card" id="mainCompanyCard">
             <table class="no-dup-table">
                 <tr>
@@ -370,24 +284,28 @@
 
         <div class="actions">
             <button onclick="saveCompanySettings()" class="no-print save-btn" id="saveCompanyBtn" style="display:none;">💾 حفظ التعديلات</button>
-            <button onclick="startRealBarcodeScanner()" class="no-print" id="scanBtn">📷 فتح الكاميرا</button>
+            <button onclick="startAdvancedScanner()" class="no-print" id="scanBtn" style="background: var(--success);">📷 الكاميرا الذكية</button>
             <button onclick="toggleFlashlight()" class="no-print torch-btn" id="torchBtn" style="display:none;">🔦 الفلاش</button>
-            <button onclick="stopBarcodeScanner()" class="no-print stop-btn" id="stopBtn" style="display:none;">✕ إغلاق</button>
+            <button onclick="stopAdvancedScanner()" class="no-print stop-btn" id="stopBtn" style="display:none;">✕ إغلاق</button>
             
             <label for="galleryBarcode" class="no-print" style="cursor: pointer;">
                 📁 رفع من المعرض
-                <input type="file" id="galleryBarcode" accept="image/*" style="display: none;" onchange="readComplexQrFromFile(event)">
+                <input type="file" id="galleryBarcode" accept="image/*" style="display: none;" onchange="readBarcodeFromFile(event)">
             </label>
 
             <button onclick="triggerPrint()" class="no-print" style="background:var(--accent);">🖨️ طباعة / PDF</button>
         </div>
 
-        <div id="reader" class="no-print"></div>
+        <div id="scannerContainer" class="no-print">
+            <video id="videoElement" autoplay playsinline muted></video>
+            <canvas id="canvasElement"></canvas>
+            <div style="background: rgba(0,0,0,0.85); color: #4ade80; font-size: 7px; padding: 3px; font-weight: bold;">
+                ⚡ جاهز لالتقاط الباركود
+            </div>
+        </div>
 
         <div class="pages-wrapper" id="pagesWrapperContainer"></div>
     </div>
-
-    <div id="qr-file-container" style="display:none;"></div>
 
     <script>
         const SUPABASE_URL = 'https://gwpgfwytwiitzbuupqvw.supabase.co';
@@ -397,71 +315,166 @@
         let currentUser = null;
         let targetManagedUser = null;
         let currentLogoBase64 = '';
-        let html5QrCode = null;
-        let fileHtml5QrCode = null;
         let scannedSerials = [];
         let tableModels = {}; 
         let tableColors = {}; 
+        
+        let mediaStream = null;
+        let scanInterval = null;
         let torchOn = false;
+        let barcodeDetector = null;
+
+        let scannerBuffer = '';
+        let lastKeyTime = Date.now();
+
+        window.addEventListener('keydown', function(e) {
+            const currentTime = Date.now();
+            if (currentTime - lastKeyTime > 150) scannerBuffer = '';
+            lastKeyTime = currentTime;
+
+            if (e.key === 'Enter') {
+                if (scannerBuffer.trim().length > 1) {
+                    e.preventDefault();
+                    playSuccessFeedback();
+                    addSerialToTable(scannerBuffer.trim());
+                    scannerBuffer = '';
+                }
+            } else if (e.key.length === 1) {
+                scannerBuffer += e.key;
+            }
+        });
+
+        function playSuccessFeedback() {
+            if (navigator.vibrate) navigator.vibrate(100);
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.08);
+            } catch (e) {}
+        }
 
         window.addEventListener('DOMContentLoaded', async () => {
+            let loginStatusSetting = 'active';
+            let maintenanceSetting = 'off';
+
+            // 1. جلب إعدادات السيرفر أولاً وبشكل مؤكد
             try {
-                const { data: settingsData } = await _supabase.from('app_settings').select('*');
-                if (settingsData) {
+                const { data: settingsData, error } = await _supabase.from('app_settings').select('*');
+                if (!error && settingsData) {
                     settingsData.forEach(item => {
-                        const val = item.setting_value;
-                        if (item.setting_key === 'login_title' && val) {
+                        if (item.setting_key === 'login_title' && item.setting_value) {
                             const titleEl = document.getElementById('loginTitleText');
-                            if (titleEl) titleEl.innerText = val;
+                            if (titleEl) titleEl.innerText = item.setting_value;
+                            const inputEl = document.getElementById('loginTitleInput');
+                            if (inputEl) inputEl.value = item.setting_value;
+                        }
+                        if (item.setting_key === 'login_status' && item.setting_value) {
+                            loginStatusSetting = item.setting_value;
+                            const selEl = document.getElementById('loginStatusSelect');
+                            if (selEl) selEl.value = item.setting_value;
+                        }
+                        if (item.setting_key === 'maintenance_mode' && item.setting_value) {
+                            maintenanceSetting = item.setting_value;
+                            const maintEl = document.getElementById('maintenanceSelect');
+                            if (maintEl) maintEl.value = item.setting_value;
                         }
                     });
                 }
-            } catch (e) {
-                console.log('App settings fetch error:', e);
+            } catch (e) { console.log(e); }
+
+            // 2. فحص وضع الصيانة بدقة
+            if (maintenanceSetting === 'on') {
+                const savedUser = localStorage.getItem('saved_username');
+                let isCurrentAdmin = false;
+                if (savedUser) {
+                    try {
+                        const { data: checkAdmin } = await _supabase.from('subscriptions').select('role').eq('username', savedUser).single();
+                        if (checkAdmin && checkAdmin.role === 'admin') isCurrentAdmin = true;
+                    } catch(err) {}
+                }
+
+                if (!isCurrentAdmin) {
+                    document.getElementById('loginOverlay').innerHTML = `
+                        <div class="login-card" style="text-align:center;">
+                            <h3 style="color:var(--danger); font-size:18px;">⚠️ الموقع تحت الصيانة حالياً</h3>
+                            <p style="font-size:12px; color:var(--text-secondary); margin-top:10px;">نعتذر عن الإيقاف المؤقت، يرجى العودة لاحقاً.</p>
+                        </div>
+                    `;
+                    document.getElementById('loginOverlay').style.display = 'flex';
+                    return;
+                }
             }
 
+            // 3. فحص إخفاء شاشة الدخول (دخول مباشر) - شريطة عدم تسجيل الخروج يدوياً
+            if (loginStatusSetting === 'bypassed' && !localStorage.getItem('manual_logout')) {
+                try {
+                    const { data: defaultUser } = await _supabase.from('subscriptions').select('*').eq('role', 'admin').eq('is_active', true).limit(1).maybeSingle();
+                    if (defaultUser) {
+                        currentUser = defaultUser;
+                        targetManagedUser = defaultUser.username;
+                        document.getElementById('loginOverlay').style.display = 'none';
+                        document.getElementById('appContainer').style.display = 'block';
+                        setupUserInterface();
+                        await loadCompanySettings(targetManagedUser);
+                        renderAllPages();
+                        return;
+                    }
+                } catch(err) {}
+            }
+
+            // 4. التحقق عبر التخزين المحلي للمستخدمين العاديين أو الأدمن
             const savedUser = localStorage.getItem('saved_username');
             const savedPass = localStorage.getItem('saved_password');
             if (savedUser && savedPass) {
                 document.getElementById('loginUser').value = savedUser;
                 document.getElementById('loginPass').value = savedPass;
-                document.getElementById('rememberMeCheck').checked = true;
                 await performAutoLogin(savedUser, savedPass);
             }
+            
             renderAllPages();
         });
+
+        function switchAdminTab(evt, tabId) {
+            document.querySelectorAll('.admin-section').forEach(sec => sec.classList.remove('active'));
+            document.querySelectorAll('.admin-tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            evt.currentTarget.classList.add('active');
+        }
+
+        function setupUserInterface() {
+            if (currentUser && currentUser.role === 'admin') {
+                document.getElementById('adminPanel').style.display = 'block';
+                document.getElementById('saveCompanyBtn').style.display = 'inline-flex';
+                document.getElementById('logoHintText').style.display = 'block';
+                makeInputsEditable(true);
+                loadAllSubscribers();
+            } else {
+                document.getElementById('adminPanel').style.display = 'none';
+                document.getElementById('saveCompanyBtn').style.display = 'none';
+                document.getElementById('logoHintText').style.display = 'none';
+                makeInputsEditable(false);
+            }
+        }
 
         async function performAutoLogin(u, p) {
             try {
                 const { data, error } = await _supabase.from('subscriptions').select('*').eq('username', u).eq('password', p).single();
-                if (error || !data) return;
-
-                const now = new Date();
-                const expiry = new Date(data.expiry_date);
-                if (!data.is_active || expiry < now) return;
-
+                if (error || !data || !data.is_active || new Date(data.expiry_date) < new Date()) return;
                 currentUser = data;
                 targetManagedUser = data.username;
-
+                localStorage.removeItem('manual_logout');
                 document.getElementById('loginOverlay').style.display = 'none';
                 document.getElementById('appContainer').style.display = 'block';
-
-                if (currentUser.role === 'admin') {
-                    document.getElementById('adminPanel').style.display = 'block';
-                    document.getElementById('saveCompanyBtn').style.display = 'inline-flex';
-                    document.getElementById('logoHintText').style.display = 'block';
-                    makeInputsEditable(true);
-                    loadAllSubscribers();
-                } else {
-                    document.getElementById('adminPanel').style.display = 'none';
-                    document.getElementById('saveCompanyBtn').style.display = 'none';
-                    document.getElementById('logoHintText').style.display = 'none';
-                    makeInputsEditable(false);
-                }
-                loadCompanySettings(targetManagedUser);
-            } catch (err) {
-                console.log('Auto login error:', err);
-            }
+                setupUserInterface();
+                await loadCompanySettings(targetManagedUser);
+            } catch (err) { console.log(err); }
         }
 
         function triggerPrint() {
@@ -483,12 +496,9 @@
 
             try {
                 const { data, error } = await _supabase.from('subscriptions').select('*').eq('username', u).eq('password', p).single();
-                if (error || !data) throw new Error('بيانات غير صحيحة');
+                if (error || !data) throw new Error();
 
-                const now = new Date();
-                const expiry = new Date(data.expiry_date);
-
-                if (!data.is_active || expiry < now) {
+                if (!data.is_active || new Date(data.expiry_date) < new Date()) {
                     errDiv.style.display = 'block';
                     errDiv.innerText = 'عذراً، انتهت مدة الاشتراك أو الحساب موقوف!';
                     return;
@@ -502,25 +512,13 @@
                     localStorage.removeItem('saved_password');
                 }
 
+                localStorage.removeItem('manual_logout');
                 currentUser = data;
                 targetManagedUser = data.username;
-
                 document.getElementById('loginOverlay').style.display = 'none';
                 document.getElementById('appContainer').style.display = 'block';
-
-                if (currentUser.role === 'admin') {
-                    document.getElementById('adminPanel').style.display = 'block';
-                    document.getElementById('saveCompanyBtn').style.display = 'inline-flex';
-                    document.getElementById('logoHintText').style.display = 'block';
-                    makeInputsEditable(true);
-                    loadAllSubscribers();
-                } else {
-                    document.getElementById('adminPanel').style.display = 'none';
-                    document.getElementById('saveCompanyBtn').style.display = 'none';
-                    document.getElementById('logoHintText').style.display = 'none';
-                    makeInputsEditable(false);
-                }
-                loadCompanySettings(targetManagedUser);
+                setupUserInterface();
+                await loadCompanySettings(targetManagedUser);
             } catch (err) {
                 errDiv.style.display = 'block';
                 errDiv.innerText = 'خطأ في التحقق من الحساب أو السيرفر!';
@@ -532,46 +530,38 @@
             targetManagedUser = null;
             localStorage.removeItem('saved_username');
             localStorage.removeItem('saved_password');
+            localStorage.setItem('manual_logout', 'true');
             document.getElementById('appContainer').style.display = 'none';
             document.getElementById('loginOverlay').style.display = 'flex';
+            location.reload();
         }
 
         function makeInputsEditable(isEditable) {
-            const inputs = document.querySelectorAll('.company-card input');
-            inputs.forEach(input => input.readOnly = !isEditable);
+            document.querySelectorAll('.company-card input').forEach(input => input.readOnly = !isEditable);
         }
 
         async function loadAllSubscribers() {
             const { data } = await _supabase.from('subscriptions').select('*');
             const tbody = document.getElementById('subscribersTableBody');
             tbody.innerHTML = '';
-
             if(data) {
-                const today = new Date();
-                today.setHours(0,0,0,0);
-
+                const today = new Date(); today.setHours(0,0,0,0);
                 data.forEach(sub => {
-                    const expiryDate = new Date(sub.expiry_date);
-                    expiryDate.setHours(0,0,0,0);
+                    const expiryDate = new Date(sub.expiry_date); expiryDate.setHours(0,0,0,0);
                     const diffDays = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
-
-                    let statusBadge = '';
-                    if (!sub.is_active) statusBadge = `<span class="badge-expired">🔴 موقوف</span>`;
-                    else if (diffDays < 0) statusBadge = `<span class="badge-expired">⚠️ منتهي (${Math.abs(diffDays)} يوم)</span>`;
-                    else if (diffDays === 0) statusBadge = `<span class="badge-expired">⚠️ ينتهي اليوم</span>`;
-                    else statusBadge = `<span class="badge-active">🟢 باقي ${diffDays} يوم</span>`;
+                    let statusBadge = !sub.is_active ? `<span class="badge-expired">🔴 موقوف</span>` : (diffDays < 0 ? `<span class="badge-expired">⚠️ منتهي</span>` : `<span class="badge-active">🟢 باقي ${diffDays} يوم</span>`);
 
                     const row = tbody.insertRow();
                     row.innerHTML = `
                         <td><b>${sub.username}</b></td>
-                        <td><input type="text" value="${sub.password}" id="pass_${sub.username}" style="padding:2px; border-radius:3px; border:1px solid #ccc; width:70px; text-align:center;"></td>
-                        <td><input type="date" value="${sub.expiry_date}" id="exp_${sub.username}" style="padding:2px; border-radius:3px; border:1px solid #ccc; width:90px;"></td>
+                        <td><input type="text" value="${sub.password}" id="pass_${sub.username}" style="width:70px; text-align:center;"></td>
+                        <td><input type="date" value="${sub.expiry_date}" id="exp_${sub.username}" style="width:90px;"></td>
                         <td>${statusBadge}</td>
                         <td>
-                            <button class="btn-sm btn-edit-user" onclick="updateUserCredentials('${sub.username}')" title="حفظ">💾</button>
-                            <button class="btn-sm btn-edit-user" onclick="adminSelectUserToManage('${sub.username}')" title="إدارة">🏢</button>
+                            <button class="btn-sm btn-edit-user" onclick="updateUserCredentials('${sub.username}')">💾</button>
+                            <button class="btn-sm btn-edit-user" onclick="adminSelectUserToManage('${sub.username}')">🏢</button>
                             <button class="btn-sm btn-toggle" onclick="toggleActive('${sub.username}', ${!sub.is_active})">${sub.is_active ? '⏸' : '▶'}</button>
-                            <button class="btn-sm btn-delete" onclick="deleteUser('${sub.username}')" title="حذف">🗑</button>
+                            <button class="btn-sm btn-delete" onclick="deleteUser('${sub.username}')">🗑</button>
                         </td>
                     `;
                 });
@@ -581,18 +571,14 @@
         async function updateUserCredentials(username) {
             const newPass = document.getElementById(`pass_${username}`).value.trim();
             const newExp = document.getElementById(`exp_${username}`).value;
-            if(!newPass || !newExp) return alert('الرجاء التأكد من تعبئة كلمة المرور وتاريخ الانتهاء');
-
             const { error } = await _supabase.from('subscriptions').update({ password: newPass, expiry_date: newExp }).eq('username', username);
-            if(error) alert('خطأ أثناء التحديث: ' + error.message);
-            else { alert(`تم تحديث بيانات المشترك (${username}) بنجاح!`); loadAllSubscribers(); }
+            if(error) alert('خطأ: ' + error.message); else { alert('تم التحديث بنجاح'); loadAllSubscribers(); }
         }
 
-        function adminSelectUserToManage(username) {
+        async function adminSelectUserToManage(username) {
             targetManagedUser = username;
-            loadCompanySettings(username);
-            alert(`تم اختيار المشترك (${username}) لتعديل بيانات منشأته.`);
-            window.scrollTo({ top: 200, behavior: 'smooth' });
+            await loadCompanySettings(username);
+            alert(`تم اختيار المشترك (${username})`);
         }
 
         async function addSubscriber() {
@@ -600,12 +586,9 @@
             const password = document.getElementById('newPassword').value.trim();
             const expiry_date = document.getElementById('newExpiry').value;
             const role = document.getElementById('newRole').value;
-
-            if(!username || !password || !expiry_date) return alert('الرجاء تعبئة كافة الحقول');
-
+            if(!username || !password || !expiry_date) return alert('املأ كافة الحقول');
             const { error } = await _supabase.from('subscriptions').insert([{ username, password, expiry_date, role, is_active: true }]);
-            if(error) alert('خطأ: المستخدم موجود مسبقاً أو بيانات غير صالحة');
-            else { alert('تمت إضافة المشترك بنجاح'); document.getElementById('newUsername').value = ''; document.getElementById('newPassword').value = ''; loadAllSubscribers(); }
+            if(error) alert('خطأ في الإضافة'); else { alert('تمت الإضافة'); loadAllSubscribers(); }
         }
 
         async function toggleActive(username, newStatus) {
@@ -614,10 +597,30 @@
         }
 
         async function deleteUser(username) {
-            if(confirm(`هل أنت متأكد من حذف الحساب (${username})؟`)) {
-                await _supabase.from('subscriptions').delete().eq('username', username);
-                loadAllSubscribers();
+            if(confirm(`حذف (${username})؟`)) { await _supabase.from('subscriptions').delete().eq('username', username); loadAllSubscribers(); }
+        }
+
+        async function saveAppSettings() {
+            if (currentUser && currentUser.role !== 'admin') return alert('للأدمن فقط');
+            const loginTitle = document.getElementById('loginTitleInput').value.trim();
+            const loginStatus = document.getElementById('loginStatusSelect').value;
+            const maintenanceMode = document.getElementById('maintenanceSelect').value;
+
+            const upserts = [
+                { setting_key: 'login_title', setting_value: loginTitle },
+                { setting_key: 'login_status', setting_value: loginStatus },
+                { setting_key: 'maintenance_mode', setting_value: maintenanceMode }
+            ];
+
+            for (let item of upserts) {
+                const { error } = await _supabase.from('app_settings').upsert(item, { onConflict: 'setting_key' });
+                if (error) {
+                    alert('خطأ أثناء حفظ الإعدادات: ' + error.message);
+                    return;
+                }
             }
+            alert('تم حفظ إعدادات الموقع بنجاح!');
+            location.reload();
         }
 
         async function loadCompanySettings(username) {
@@ -631,15 +634,12 @@
             document.getElementById('compName').value = data.comp_name || data.name || '';
             document.getElementById('phone').value = data.phone || '';
             document.getElementById('email').value = data.email || '';
-            document.getElementById('commercialRecord').value = data.commercial_record || data.commercialRecord || '';
-            document.getElementById('taxNumber').value = data.tax_number || data.taxNumber || '';
+            document.getElementById('commercialRecord').value = data.commercial_record || '';
+            document.getElementById('taxNumber').value = data.tax_number || '';
             if(data.logo_url || data.logo) {
                 currentLogoBase64 = data.logo_url || data.logo;
                 document.getElementById('logoPreview').innerHTML = `<img src="${currentLogoBase64}">`;
-            } else {
-                currentLogoBase64 = '';
-                document.getElementById('logoPreview').innerHTML = `الشعار`;
-            }
+            } else { currentLogoBase64 = ''; document.getElementById('logoPreview').innerHTML = `الشعار`; }
             syncAllCompanyCards();
         }
 
@@ -655,8 +655,7 @@
         }
 
         function syncCompanyData(field, val) {
-            const elements = document.querySelectorAll(`.${field}-sync`);
-            elements.forEach(el => el.value = val);
+            document.querySelectorAll(`.${field}-sync`).forEach(el => el.value = val);
         }
 
         function syncAllCompanyCards() {
@@ -678,8 +677,7 @@
         }
 
         async function saveCompanySettings() {
-            if (currentUser && currentUser.role !== 'admin') return alert('عذراً، التعديل متاح للأدمن فقط.');
-
+            if (currentUser && currentUser.role !== 'admin') return alert('للأدمن فقط');
             const payload = {
                 username: targetManagedUser,
                 comp_name: document.getElementById('compName').value,
@@ -689,20 +687,13 @@
                 tax_number: document.getElementById('taxNumber').value,
                 logo_url: currentLogoBase64
             };
-
-            try {
-                const { error } = await _supabase.from('company_settings').upsert(payload, { onConflict: 'username' });
-                if(error) alert('خطأ في الحفظ السحابي: ' + error.message);
-                else alert(`تم حفظ وتحديث بيانات منشأة المشترك (${targetManagedUser}) بنجاح تام!`);
-            } catch (err) { alert('حدث خطأ أثناء الاتصال بقاعدة البيانات.'); }
+            const { error } = await _supabase.from('company_settings').upsert(payload, { onConflict: 'username' });
+            if(error) alert('خطأ: ' + error.message); else alert('تم الحفظ بنجاح!');
         }
 
         function triggerLogoUpload() {
-            if (currentUser && currentUser.role !== 'admin') {
-                document.getElementById('logoInput').click();
-            } else {
-                alert('رفع وتغيير الشعار متاح من خلال لوحة الأدمن فقط.');
-            }
+            if (currentUser && currentUser.role === 'admin') document.getElementById('logoInput').click();
+            else alert('متاح للأدمن فقط.');
         }
 
         function handleLogoUpload(e) {
@@ -718,136 +709,145 @@
             }
         }
 
-        function startRealBarcodeScanner() {
-            document.getElementById('reader').style.display = 'block';
+        async function startAdvancedScanner() {
+            document.getElementById('scannerContainer').style.display = 'block';
             document.getElementById('scanBtn').style.display = 'none';
             document.getElementById('torchBtn').style.display = 'inline-block';
             document.getElementById('stopBtn').style.display = 'inline-block';
 
-            html5QrCode = new Html5Qrcode("reader");
-            
-            const config = { 
-                fps: 10,
-                qrbox: false,
-                aspectRatio: 1.7777778,
-                videoConstraints: {
-                    facingMode: { exact: "environment" },
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                },
-                formatsToSupport: [
-                    Html5QrcodeSupportedFormats.QR_CODE,
-                    Html5QrcodeSupportedFormats.DATA_MATRIX,
-                    Html5QrcodeSupportedFormats.PDF_417,
-                    Html5QrcodeSupportedFormats.CODE_128,
-                    Html5QrcodeSupportedFormats.CODE_39,
-                    Html5QrcodeSupportedFormats.CODE_93,
-                    Html5QrcodeSupportedFormats.EAN_13,
-                    Html5QrcodeSupportedFormats.EAN_8,
-                    Html5QrcodeSupportedFormats.UPC_A,
-                    Html5QrcodeSupportedFormats.UPC_E,
-                    Html5QrcodeSupportedFormats.ITF
-                ]
-            };
+            if (!('BarcodeDetector' in window)) {
+                alert("عذراً، متصفحك الحالي لا يدعم محرك قراءة الباركود المتطور.");
+                return;
+            }
 
-            html5QrCode.start(
-                { facingMode: { exact: "environment" } }, 
-                config,
-                (decodedText) => {
-                    addSerialToTable(decodedText);
-                    stopBarcodeScanner();
-                },
-                (err) => {}
-            ).catch(err => {
-                alert("تعذر فتح الكاميرا أو الوصول إليها");
-                stopBarcodeScanner();
-            });
+            if (!barcodeDetector) {
+                try {
+                    barcodeDetector = new BarcodeDetector({
+                        formats: ['code_128', 'code_39', 'code_93', 'ean_13', 'ean_8', 'pdf417', 'qr_code', 'data_matrix']
+                    });
+                } catch (e) {
+                    barcodeDetector = new BarcodeDetector();
+                }
+            }
+
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia({
+                    video: { 
+                        facingMode: { ideal: "environment" },
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                });
+                const videoEl = document.getElementById('videoElement');
+                videoEl.srcObject = mediaStream;
+                videoEl.play();
+
+                const canvas = document.getElementById('canvasElement');
+                const ctx = canvas.getContext('2d');
+
+                scanInterval = setInterval(async () => {
+                    if (videoEl.readyState === videoEl.HAVE_ENOUGH_DATA && barcodeDetector) {
+                        canvas.width = videoEl.videoWidth;
+                        canvas.height = videoEl.videoHeight;
+                        ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+
+                        try {
+                            const barcodes = await barcodeDetector.detect(canvas);
+                            if (barcodes.length > 0) {
+                                const detectedText = barcodes[0].rawValue;
+                                if (detectedText) {
+                                    playSuccessFeedback();
+                                    addSerialToTable(detectedText);
+                                    stopAdvancedScanner();
+                                }
+                            }
+                        } catch (err) {}
+                    }
+                }, 100);
+
+            } catch (err) {
+                alert("تعذر تشغيل الكاميرا، تأكد من إعطاء الصلاحيات.");
+                stopAdvancedScanner();
+            }
         }
 
         async function toggleFlashlight() {
-            if (!html5QrCode) return;
+            if (!mediaStream) return;
             try {
+                const track = mediaStream.getVideoTracks()[0];
                 torchOn = !torchOn;
-                await html5QrCode.applyVideoConstraints({
+                await track.applyConstraints({
                     advanced: [{ torch: torchOn }]
                 });
-                const torchBtn = document.getElementById('torchBtn');
-                torchBtn.style.background = torchOn ? 'var(--success)' : 'var(--warning)';
-                torchBtn.innerText = torchOn ? '💡 إطفاء الفلاش' : '🔦 الفلاش';
+                const btn = document.getElementById('torchBtn');
+                btn.style.background = torchOn ? 'var(--success)' : 'var(--warning)';
+                btn.innerText = torchOn ? '💡 إطفاء الفلاش' : '🔦 الفلاش';
             } catch (e) {
-                alert("خاصية الفلاش غير مدعومة في هذا الجهاز أو المتصفح");
                 torchOn = false;
             }
         }
 
-        function stopBarcodeScanner() {
-            if (html5QrCode) {
-                html5QrCode.stop().then(() => { html5QrCode.clear(); resetUI(); }).catch(() => resetUI());
-            } else resetUI();
-        }
-
-        function resetUI() {
-            document.getElementById('reader').style.display = 'none';
+        function stopAdvancedScanner() {
+            if (scanInterval) clearInterval(scanInterval);
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+            document.getElementById('scannerContainer').style.display = 'none';
             document.getElementById('scanBtn').style.display = 'inline-block';
             document.getElementById('torchBtn').style.display = 'none';
             document.getElementById('stopBtn').style.display = 'none';
             torchOn = false;
         }
 
-        async function readComplexQrFromFile(event) {
+        async function readBarcodeFromFile(event) {
             const file = event.target.files[0];
             if (!file) return;
-            if (!fileHtml5QrCode) fileHtml5QrCode = new Html5Qrcode("qr-file-container");
 
-            try {
-                const decodedText = await fileHtml5QrCode.scanFile(file, true);
-                if (decodedText) addSerialToTable(decodedText);
-            } catch (err) {
-                alert("تعذر قراءة الكود المعقد من الصورة، تأكد من وضوحها.");
-            }
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const img = new Image();
+                img.onload = async function() {
+                    if ('BarcodeDetector' in window) {
+                        try {
+                            const detector = new BarcodeDetector();
+                            const barcodes = await detector.detect(img);
+                            if (barcodes.length > 0 && barcodes[0].rawValue) {
+                                playSuccessFeedback();
+                                addSerialToTable(barcodes[0].rawValue);
+                                return;
+                            }
+                        } catch(err) {}
+                    }
+                    alert("لم يتم التعرف على الكود من الصورة، حاول التقاط صورة أوضح.");
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
             event.target.value = '';
         }
 
         function addSerialToTable(codeText) {
             if (!codeText) return;
-
             let rawItems = codeText.split(/\r?\n|,|\t|;|\s+/).map(item => item.trim()).filter(item => item !== "");
             let validItems = [];
-            
             rawItems.forEach(item => {
                 let cleanItem = item.replace(/[^a-zA-Z0-9]/g, '');
-                if (cleanItem.length >= 3) {
-                    validItems.push(cleanItem);
-                }
+                if (cleanItem.length >= 3) validItems.push(cleanItem);
             });
+            if (validItems.length === 0) validItems.push(codeText.trim());
 
-            if (validItems.length === 0 && codeText.trim() !== "") {
-                validItems.push(codeText.trim());
-            }
-
-            validItems.forEach(item => {
-                scannedSerials.push(item);
-            });
-
+            validItems.forEach(item => { scannedSerials.push(item); });
             renderAllPages();
         }
 
-        function updateSerialVal(globalIndex, val) {
-            scannedSerials[globalIndex] = val;
-        }
-
-        function updateModelVal(globalIndex, val) {
-            tableModels[globalIndex] = val;
-        }
-
-        function updateColorVal(globalIndex, val) {
-            tableColors[globalIndex] = val;
-        }
+        function updateSerialVal(idx, val) { scannedSerials[idx] = val; }
+        function updateModelVal(idx, val) { tableModels[idx] = val; }
+        function updateColorVal(idx, val) { tableColors[idx] = val; }
 
         function renderAllPages() {
             const wrapper = document.getElementById('pagesWrapperContainer');
             wrapper.innerHTML = '';
-
             const itemsPerPage = 126; 
             const totalPages = Math.max(1, Math.ceil(scannedSerials.length / itemsPerPage));
 
@@ -868,33 +868,14 @@
                     <table class="no-dup-table">
                         <tr>
                             <td style="width: 37%; vertical-align: top;">
-                                <div class="input-group">
-                                    <label>اسم المنشأة:</label>
-                                    <input type="text" class="print-compName" value="${compName}" readonly>
-                                </div>
-                                <div class="input-group">
-                                    <label>الرقم الضريبي:</label>
-                                    <input type="text" class="print-taxNumber" value="${taxNumber}" readonly>
-                                </div>
-                                <div class="input-group">
-                                    <label>السجل التجاري:</label>
-                                    <input type="text" class="print-commercialRecord" value="${commercialRecord}" readonly>
-                                </div>
+                                <div class="input-group"><label>اسم المنشأة:</label><input type="text" class="print-compName" value="${compName}" readonly></div>
+                                <div class="input-group"><label>الرقم الضريبي:</label><input type="text" class="print-taxNumber" value="${taxNumber}" readonly></div>
+                                <div class="input-group"><label>السجل التجاري:</label><input type="text" class="print-commercialRecord" value="${commercialRecord}" readonly></div>
                             </td>
-                            
-                            <td style="width: 26%; text-align: center; vertical-align: middle;">
-                                <div class="logo-box print-logoPreview">${logoHtml}</div>
-                            </td>
-
+                            <td style="width: 26%; text-align: center; vertical-align: middle;"><div class="logo-box print-logoPreview">${logoHtml}</div></td>
                             <td style="width: 37%; vertical-align: top;">
-                                <div class="input-group" style="justify-content: flex-end;">
-                                    <label style="text-align: right;">رقم التليفون:</label>
-                                    <input type="text" class="print-phone" value="${phone}" readonly style="text-align: right;">
-                                </div>
-                                <div class="input-group" style="justify-content: flex-end;">
-                                    <label style="text-align: right;">البريد الإلكتروني:</label>
-                                    <input type="email" class="print-email" value="${email}" readonly style="text-align: right;">
-                                </div>
+                                <div class="input-group" style="justify-content: flex-end;"><label style="text-align: right;">رقم التليفون:</label><input type="text" class="print-phone" value="${phone}" readonly style="text-align: right;"></div>
+                                <div class="input-group" style="justify-content: flex-end;"><label style="text-align: right;">البريد الإلكتروني:</label><input type="email" class="print-email" value="${email}" readonly style="text-align: right;"></div>
                             </td>
                         </tr>
                     </table>
@@ -907,7 +888,6 @@
                 for (let gridIdx = 1; gridIdx <= 6; gridIdx++) {
                     const boxDiv = document.createElement('div');
                     boxDiv.className = 'single-grid-box';
-
                     const absoluteGridNumber = (pageIdx * 6) + gridIdx;
 
                     let tableHTML = `
@@ -926,8 +906,6 @@
 
                     for (let rowIdx = 1; rowIdx <= 21; rowIdx++) {
                         const globalIndex = (pageIdx * itemsPerPage) + ((gridIdx - 1) * 21) + (rowIdx - 1);
-                        const displayIndex = rowIdx;
-
                         const serialValue = scannedSerials[globalIndex] || '';
                         const modelValue = tableModels[globalIndex] || '';
                         const colorValue = tableColors[globalIndex] || '';
@@ -935,7 +913,7 @@
                         if (rowIdx === 1) {
                             tableHTML += `
                                 <tr>
-                                    <td>${displayIndex}</td>
+                                    <td>${rowIdx}</td>
                                     <td style="text-align:right; padding:0;"><input type="text" class="grid-input" value="${serialValue}" oninput="updateSerialVal(${globalIndex}, this.value)" style="text-align:right; padding-right:1px;"></td>
                                     <td rowspan="21" style="vertical-align: middle; text-align: center; font-weight: 900; font-size: 6.5px;">${absoluteGridNumber}</td>
                                     <td><input type="text" class="grid-input" value="${modelValue}" oninput="updateModelVal(${globalIndex}, this.value)"></td>
@@ -945,7 +923,7 @@
                         } else {
                             tableHTML += `
                                 <tr>
-                                    <td>${displayIndex}</td>
+                                    <td>${rowIdx}</td>
                                     <td style="text-align:right; padding:0;"><input type="text" class="grid-input" value="${serialValue}" oninput="updateSerialVal(${globalIndex}, this.value)" style="text-align:right; padding-right:1px;"></td>
                                     <td><input type="text" class="grid-input" value="${modelValue}" oninput="updateModelVal(${globalIndex}, this.value)"></td>
                                     <td><input type="text" class="grid-input" value="${colorValue}" oninput="updateColorVal(${globalIndex}, this.value)"></td>
@@ -953,12 +931,10 @@
                             `;
                         }
                     }
-
                     tableHTML += `</tbody></table>`;
                     boxDiv.innerHTML = tableHTML;
                     gridContainer.appendChild(boxDiv);
                 }
-
                 pageSection.appendChild(gridContainer);
                 wrapper.appendChild(pageSection);
             }
