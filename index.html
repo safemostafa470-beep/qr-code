@@ -32,7 +32,7 @@
             background: var(--card-bg); padding: 30px 20px; border-radius: 20px; width: 100%; max-width: 380px; 
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); text-align: center;
         }
-        .login-card h3 { margin-bottom: 20px; color: var(--text-main); font-size: 20px; font-weight: 900; }
+        .login-card h3 { margin-bottom: 20px; color: var(--text-main); font-size: 20px; font-weight: 900; transition: 0.3s; }
         .login-card input { 
             width: 100%; padding: 12px 15px; margin-bottom: 12px; border: 2px solid #cbd5e1; 
             border-radius: 12px; font-size: 14px; text-align: center; background: #f8fafc; transition: 0.3s;
@@ -171,10 +171,10 @@
             <h3 id="loginTitleText">🔐 بوابة دخول النظام</h3>
             <input type="text" id="loginUser" placeholder="اسم المستخدم">
             <input type="password" id="loginPass" placeholder="كلمة المرور">
-            <label class="remember-me">
+            <label class="remember-me" id="rememberLabel">
                 <input type="checkbox" id="rememberMeCheck" checked> حفظ بيانات الدخول
             </label>
-            <button type="button" onclick="handleLogin()">تسجيل الدخول</button>
+            <button type="button" id="loginBtn" onclick="handleLogin()">تسجيل الدخول</button>
             <div id="loginError">بيانات الدخول خاطئة أو الاشتراك منتهي!</div>
         </div>
     </div>
@@ -227,17 +227,17 @@
                     <input type="text" id="loginTitleInput" placeholder="عنوان شاشة الدخول">
                 </div>
                 <div class="input-group" style="margin-bottom: 4px;">
-                    <label style="width: 100px;">حالة شاشة الدخول:</label>
+                    <label style="width: 100px;">حالة تسجيل الدخول:</label>
                     <select id="loginStatusSelect">
-                        <option value="active">إظهار اللوجن للمستخدمين</option>
-                        <option value="bypassed">إخفاء اللوجن للمستخدمين (دخول مباشر)</option>
+                        <option value="true">إظهار اللوجن (مفعل)</option>
+                        <option value="false">إخفاء اللوجن (دخول مباشر)</option>
                     </select>
                 </div>
                 <div class="input-group" style="margin-bottom: 6px;">
                     <label style="width: 100px;">وضع الصيانة:</label>
                     <select id="maintenanceSelect">
-                        <option value="off">إيقاف وضع الصيانة</option>
-                        <option value="on">تفعيل وضع الصيانة للمستخدمين</option>
+                        <option value="false">إيقاف وضع الصيانة (الموقع يعمل)</option>
+                        <option value="true">تفعيل وضع الصيانة (إغلاق الموقع)</option>
                     </select>
                 </div>
                 <button class="btn-add" onclick="saveAppSettings()" style="width: 100%;">💾 حفظ إعدادات الموقع</button>
@@ -327,6 +327,10 @@
         let scannerBuffer = '';
         let lastKeyTime = Date.now();
 
+        // متغيرات الاستشعار الحي
+        let globalMaintenanceSetting = 'false';
+        let globalLoginStatusSetting = 'true';
+
         window.addEventListener('keydown', function(e) {
             const currentTime = Date.now();
             if (currentTime - lastKeyTime > 150) scannerBuffer = '';
@@ -360,84 +364,219 @@
             } catch (e) {}
         }
 
-        window.addEventListener('DOMContentLoaded', async () => {
-            let loginStatusSetting = 'active';
-            let maintenanceSetting = 'off';
-
+        // ==========================================
+        // نواة النظام: الفحص الحي بدون ريفرش
+        // ==========================================
+        async function checkSettingsPeriodically() {
             try {
                 const { data: settingsData, error } = await _supabase.from('app_settings').select('*');
-                if (!error && settingsData) {
-                    settingsData.forEach(item => {
-                        if (item.setting_key === 'login_title' && item.setting_value) {
-                            const titleEl = document.getElementById('loginTitleText');
-                            if (titleEl) titleEl.innerText = item.setting_value;
-                            const inputEl = document.getElementById('loginTitleInput');
-                            if (inputEl) inputEl.value = item.setting_value;
-                        }
-                        if (item.setting_key === 'login_status' && item.setting_value) {
-                            loginStatusSetting = item.setting_value;
-                            const selEl = document.getElementById('loginStatusSelect');
-                            if (selEl) selEl.value = item.setting_value;
-                        }
-                        if (item.setting_key === 'maintenance_mode' && item.setting_value) {
-                            maintenanceSetting = item.setting_value;
-                            const maintEl = document.getElementById('maintenanceSelect');
-                            if (maintEl) maintEl.value = item.setting_value;
-                        }
-                    });
-                }
-            } catch (e) { console.log(e); }
+                if (error || !settingsData) return;
 
-            // التحقق من حساب المستخدم المخزن مسبقاً لمعرفة هل هو أدمن أم مستخدم عادي
+                settingsData.forEach(item => {
+                    if (item.setting_key === 'enable_login') {
+                        globalLoginStatusSetting = item.setting_value;
+                        const selEl = document.getElementById('loginStatusSelect');
+                        if (selEl && selEl.value !== item.setting_value) selEl.value = item.setting_value;
+                    }
+                    if (item.setting_key === 'maintenance_mode') {
+                        globalMaintenanceSetting = item.setting_value;
+                        const maintEl = document.getElementById('maintenanceSelect');
+                        if (maintEl && maintEl.value !== item.setting_value) maintEl.value = item.setting_value;
+                    }
+                    if (item.setting_key === 'login_title' && item.setting_value) {
+                        const titleEl = document.getElementById('loginTitleText');
+                        if (titleEl && titleEl.innerText !== item.setting_value) titleEl.innerText = item.setting_value;
+                        const inputEl = document.getElementById('loginTitleInput');
+                        if (inputEl && inputEl.value !== item.setting_value) inputEl.value = item.setting_value;
+                    }
+                });
+
+                evaluateSystemState();
+            } catch (e) {}
+        }
+
+        async function evaluateSystemState() {
+            const isCurrentAdmin = (currentUser && currentUser.role === 'admin');
+            const bypassEnabled = String(globalLoginStatusSetting) === 'false';
+            const maintenanceEnabled = String(globalMaintenanceSetting) === 'true';
+
+            // 1. نظام وضع الصيانة (يطبق فورا)
+            if (maintenanceEnabled) {
+                if (!isCurrentAdmin) {
+                    showMaintenanceScreen();
+                }
+                return; 
+            }
+
+            // 2. الوضع الطبيعي 
+            if (!maintenanceEnabled) {
+                
+                // استعادة شاشة اللوجن لو كانت معلقة بسبب الصيانة
+                if (document.getElementById('loginOverlay').style.display !== 'none' && !currentUser && !bypassEnabled) {
+                    showNormalLoginScreen();
+                }
+
+                // أ- إخفاء اللوجن (الدخول الفوري الذكي)
+                if (bypassEnabled) {
+                    if (!currentUser && !sessionStorage.getItem('admin_reveal')) {
+                        await executeBypassLogin();
+                    }
+                }
+                
+                // ب- إظهار اللوجن (طرد المتخطيين فورا)
+                if (!bypassEnabled) {
+                    if (currentUser && currentUser.is_bypassed) {
+                        silentLogout(); 
+                    } else if (!currentUser && document.getElementById('loginOverlay').style.display === 'none') {
+                        showNormalLoginScreen();
+                    }
+                }
+            }
+        }
+
+        function showMaintenanceScreen() {
+            document.getElementById('appContainer').style.display = 'none';
+            document.getElementById('loginOverlay').style.display = 'flex';
+            
+            const errDiv = document.getElementById('loginError');
+            errDiv.style.display = 'block';
+            errDiv.style.fontSize = '14px';
+            
+            if (!sessionStorage.getItem('admin_reveal')) {
+                errDiv.innerHTML = '⚠ الموقع تحت الصيانة حالياً.<br>نعتذر عن الإيقاف المؤقت، يرجى العودة لاحقاً.';
+                errDiv.style.color = '#e11d48';
+                errDiv.style.background = '#fff1f2';
+                
+                document.getElementById('loginUser').style.display = 'none';
+                document.getElementById('loginPass').style.display = 'none';
+                document.getElementById('rememberLabel').style.display = 'none';
+                document.getElementById('loginBtn').style.display = 'none';
+            } else {
+                errDiv.innerHTML = '⚠ وضع الصيانة مفعل. (الولوج حصري للإدارة).';
+                errDiv.style.color = '#d97706';
+                errDiv.style.background = '#fef3c7';
+                
+                document.getElementById('loginUser').style.display = 'block';
+                document.getElementById('loginPass').style.display = 'block';
+                document.getElementById('rememberLabel').style.display = 'flex';
+                document.getElementById('loginBtn').style.display = 'block';
+            }
+        }
+
+        function showNormalLoginScreen() {
+            document.getElementById('appContainer').style.display = 'none';
+            document.getElementById('loginOverlay').style.display = 'flex';
+            
+            document.getElementById('loginUser').style.display = 'block';
+            document.getElementById('loginPass').style.display = 'block';
+            document.getElementById('rememberLabel').style.display = 'flex';
+            document.getElementById('loginBtn').style.display = 'block';
+            
+            const errDiv = document.getElementById('loginError');
+            if(errDiv.innerHTML.includes('الصيانة')) {
+                errDiv.style.display = 'none';
+            }
+        }
+
+        // ==========================================
+        // التخطي الذكي: حتى لو مفيش أي مستخدم عادي مسجل!
+        // ==========================================
+        async function executeBypassLogin() {
+            try {
+                let userToUse = { username: 'زائر_مباشر', role: 'user', is_active: true }; 
+                
+                const { data: defaultUser } = await _supabase.from('subscriptions').select('*').eq('role', 'user').eq('is_active', true).limit(1).maybeSingle();
+                
+                if (defaultUser) {
+                    userToUse = defaultUser;
+                } else {
+                    const { data: adminUser } = await _supabase.from('subscriptions').select('*').eq('role', 'admin').eq('is_active', true).limit(1).maybeSingle();
+                    if (adminUser) {
+                        userToUse = { ...adminUser, role: 'user' }; 
+                    }
+                }
+
+                currentUser = userToUse;
+                currentUser.is_bypassed = true; 
+                targetManagedUser = userToUse.username;
+                
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('appContainer').style.display = 'block';
+                
+                setupUserInterface();
+                await loadCompanySettings(targetManagedUser);
+                renderAllPages();
+            } catch(err) {
+                currentUser = { username: 'زائر_مباشر', role: 'user', is_bypassed: true };
+                targetManagedUser = 'زائر_مباشر';
+                document.getElementById('loginOverlay').style.display = 'none';
+                document.getElementById('appContainer').style.display = 'block';
+                setupUserInterface();
+                clearCompanyForm();
+                renderAllPages();
+            }
+        }
+
+        function silentLogout() {
+            currentUser = null;
+            targetManagedUser = null;
+            showNormalLoginScreen();
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
             const savedUser = localStorage.getItem('saved_username');
+            const savedPass = localStorage.getItem('saved_password');
             let isCurrentAdmin = false;
-            if (savedUser) {
+
+            if (savedUser && savedPass) {
                 try {
-                    const { data: checkAdmin } = await _supabase.from('subscriptions').select('*').eq('username', savedUser).maybeSingle();
+                    const { data: checkAdmin } = await _supabase.from('subscriptions').select('*').eq('username', savedUser).eq('password', savedPass).maybeSingle();
                     if (checkAdmin && checkAdmin.role === 'admin') {
                         isCurrentAdmin = true;
                     }
                 } catch(err) {}
             }
 
-            // وضع الصيانة يطبق فقط على المستخدمين العاديين (الأدمن مستثنى تماماً)
-            if (maintenanceSetting === 'on' && !isCurrentAdmin) {
-                document.getElementById('loginOverlay').innerHTML = `
-                    <div class="login-card" style="text-align:center;">
-                        <h3 style="color:var(--danger); font-size:18px;">⚠ الموقع تحت الصيانة حالياً</h3>
-                        <p style="font-size:12px; color:var(--text-secondary); margin-top:10px;">نعتذر عن الإيقاف المؤقت، يرجى العودة لاحقاً.</p>
-                    </div>
-                `;
-                document.getElementById('loginOverlay').style.display = 'flex';
-                return;
+            // الباب السري للأدمن أثناء الصيانة (اضغط مرتين على العنوان)
+            const titleEl = document.getElementById('loginTitleText');
+            titleEl.style.cursor = 'pointer';
+            titleEl.title = 'اضغط مرتين لإظهار تسجيل دخول الإدارة';
+            titleEl.addEventListener('dblclick', () => {
+                sessionStorage.setItem('admin_reveal', 'true');
+                if (String(globalMaintenanceSetting) === 'true') {
+                    showMaintenanceScreen();
+                } else {
+                    showNormalLoginScreen();
+                }
+            });
+
+            // الجلب السريع للإعدادات
+            await checkSettingsPeriodically();
+
+            const isBypass = String(globalLoginStatusSetting) === 'false';
+            const isMaint = String(globalMaintenanceSetting) === 'true';
+
+            if (isMaint) {
+                if (isCurrentAdmin) await performAutoLogin(savedUser, savedPass);
+                else showMaintenanceScreen();
+                setInterval(checkSettingsPeriodically, 3000);
+                return; 
             }
 
-            // إخفاء اللوجن (التخطي) يطبق فقط على المستخدمين العاديين أو عند عدم وجود تسجيل خروج يدوي
-            if (loginStatusSetting === 'bypassed' && !localStorage.getItem('manual_logout') && !isCurrentAdmin) {
-                try {
-                    const { data: defaultUser } = await _supabase.from('subscriptions').select('*').eq('role', 'user').eq('is_active', true).limit(1).maybeSingle();
-                    if (defaultUser) {
-                        currentUser = defaultUser;
-                        targetManagedUser = defaultUser.username;
-                        document.getElementById('loginOverlay').style.display = 'none';
-                        document.getElementById('appContainer').style.display = 'block';
-                        setupUserInterface();
-                        await loadCompanySettings(targetManagedUser);
-                        renderAllPages();
-                        return;
-                    }
-                } catch(err) {}
-            }
-
-            if (savedUser) {
-                const savedPass = localStorage.getItem('saved_password');
-                if (savedPass) {
-                    document.getElementById('loginUser').value = savedUser;
-                    document.getElementById('loginPass').value = savedPass;
-                    await performAutoLogin(savedUser, savedPass);
+            if (isBypass && !sessionStorage.getItem('admin_reveal')) {
+                if (!isCurrentAdmin) {
+                    await executeBypassLogin();
+                    setInterval(checkSettingsPeriodically, 3000);
+                    return;
                 }
             }
+
+            if (savedUser && savedPass && !sessionStorage.getItem('admin_reveal')) {
+                await performAutoLogin(savedUser, savedPass);
+            }
             
+            // تشغيل الاستشعار الحي كل 3 ثواني بدون ريفرش
+            setInterval(checkSettingsPeriodically, 3000);
             renderAllPages();
         });
 
@@ -467,15 +606,19 @@
             try {
                 const { data, error } = await _supabase.from('subscriptions').select('*').eq('username', u).eq('password', p).maybeSingle();
                 if (error || !data || !data.is_active || new Date(data.expiry_date) < new Date()) return;
+                
+                if (String(globalMaintenanceSetting) === 'true' && data.role !== 'admin') return;
+
                 currentUser = data;
+                currentUser.is_bypassed = false;
                 targetManagedUser = data.username;
-                localStorage.removeItem('manual_logout');
+                
                 document.getElementById('loginOverlay').style.display = 'none';
                 document.getElementById('appContainer').style.display = 'block';
                 setupUserInterface();
                 await loadCompanySettings(targetManagedUser);
                 renderAllPages();
-            } catch (err) { console.log(err); }
+            } catch (err) {}
         }
 
         function triggerPrint() {
@@ -509,6 +652,12 @@
                     return;
                 }
 
+                if (String(globalMaintenanceSetting) === 'true' && data.role !== 'admin') {
+                    errDiv.style.display = 'block';
+                    errDiv.innerText = 'الموقع تحت الصيانة حالياً. غير مسموح بالدخول إلا للإدارة!';
+                    return;
+                }
+
                 if (remember) {
                     localStorage.setItem('saved_username', u);
                     localStorage.setItem('saved_password', p);
@@ -517,9 +666,10 @@
                     localStorage.removeItem('saved_password');
                 }
 
-                localStorage.removeItem('manual_logout');
                 currentUser = data;
+                currentUser.is_bypassed = false;
                 targetManagedUser = data.username;
+                
                 document.getElementById('loginOverlay').style.display = 'none';
                 document.getElementById('appContainer').style.display = 'block';
                 setupUserInterface();
@@ -536,10 +686,15 @@
             targetManagedUser = null;
             localStorage.removeItem('saved_username');
             localStorage.removeItem('saved_password');
-            localStorage.setItem('manual_logout', 'true');
+            sessionStorage.setItem('admin_reveal', 'true'); 
+            
             document.getElementById('appContainer').style.display = 'none';
-            document.getElementById('loginOverlay').style.display = 'flex';
-            location.reload();
+            
+            if (String(globalMaintenanceSetting) === 'true') {
+                showMaintenanceScreen();
+            } else {
+                showNormalLoginScreen();
+            }
         }
 
         function makeInputsEditable(isEditable) {
@@ -614,7 +769,7 @@
 
             const upserts = [
                 { setting_key: 'login_title', setting_value: loginTitle },
-                { setting_key: 'login_status', setting_value: loginStatus },
+                { setting_key: 'enable_login', setting_value: loginStatus },
                 { setting_key: 'maintenance_mode', setting_value: maintenanceMode }
             ];
 
@@ -625,8 +780,8 @@
                     return;
                 }
             }
-            alert('تم حفظ وتطبيق إعدادات الموقع بنجاح!');
-            location.reload();
+            alert('تم حفظ الإعدادات وتطبيقها حياً على جميع الزوار فوراً!');
+            await checkSettingsPeriodically();
         }
 
         async function loadCompanySettings(username) {
